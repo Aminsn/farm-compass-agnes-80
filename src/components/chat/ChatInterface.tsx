@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { sendChatRequest, OpenAIMessage } from "@/utils/openai";
+import { sendChatRequest } from "@/utils/gemini";
 
 type Message = {
   id: string;
@@ -37,7 +37,7 @@ const suggestedQuestions = [
 ];
 
 // Initial system message to define Agnes's role
-const SYSTEM_MESSAGE: OpenAIMessage = {
+const SYSTEM_MESSAGE = {
   role: "system",
   content: `You are Agnes, a helpful and knowledgeable AI farming assistant. 
   Your goal is to help farmers make the best decisions for their crops and land.
@@ -56,22 +56,22 @@ const ChatInterface = () => {
   const { toast } = useToast();
   const [apiKey, setApiKey] = useState<string>(() => {
     // Try to get API key from localStorage if available
-    return localStorage.getItem("openai_api_key") || "";
+    return localStorage.getItem("gemini_api_key") || "";
   });
   const [isApiKeyDialogOpen, setIsApiKeyDialogOpen] = useState(false);
   
   // Save API key to localStorage whenever it changes
   useEffect(() => {
     if (apiKey) {
-      localStorage.setItem("openai_api_key", apiKey);
+      localStorage.setItem("gemini_api_key", apiKey);
     }
   }, [apiKey]);
 
-  // Convert chat history to OpenAI message format
-  const prepareMessagesForAPI = (userMessage: string): OpenAIMessage[] => {
-    const historyMessages: OpenAIMessage[] = [];
+  // Convert chat history to message format
+  const prepareMessagesForAPI = (userMessage: string) => {
+    const historyMessages = [];
     
-    // Add system message first
+    // Add system message first (Note: Gemini will filter this out as it doesn't support system messages)
     historyMessages.push(SYSTEM_MESSAGE);
     
     // Add up to 10 most recent messages from chat history (to stay within context limits)
@@ -93,8 +93,8 @@ const ChatInterface = () => {
     return historyMessages;
   };
 
-  // Send message to OpenAI and get response
-  const getOpenAIResponse = async (question: string) => {
+  // Send message to Gemini and get response
+  const getGeminiResponse = async (question: string) => {
     // Add user message
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -118,7 +118,7 @@ const ChatInterface = () => {
       // Prepare messages for API
       const apiMessages = prepareMessagesForAPI(question);
       
-      // Get response from OpenAI
+      // Get response from Gemini
       const responseContent = await sendChatRequest(apiMessages, apiKey);
       
       // Add Agnes response
@@ -186,9 +186,9 @@ const ChatInterface = () => {
 
   const handleSendMessage = () => {
     if (input.trim()) {
-      // Use OpenAI if API key is available, otherwise use simulated responses
+      // Use Gemini if API key is available, otherwise show dialog
       if (apiKey) {
-        getOpenAIResponse(input.trim());
+        getGeminiResponse(input.trim());
       } else {
         // Show dialog to enter API key
         setIsApiKeyDialogOpen(true);
@@ -206,7 +206,7 @@ const ChatInterface = () => {
   const handleSuggestedQuestion = (question: string) => {
     setInput(question);
     if (apiKey) {
-      getOpenAIResponse(question);
+      getGeminiResponse(question);
     } else {
       setIsApiKeyDialogOpen(true);
     }
@@ -223,21 +223,21 @@ const ChatInterface = () => {
   // Save API key and close dialog
   const saveApiKey = () => {
     if (apiKey.trim()) {
-      localStorage.setItem("openai_api_key", apiKey);
+      localStorage.setItem("gemini_api_key", apiKey);
       setIsApiKeyDialogOpen(false);
       toast({
         title: "API Key Saved",
-        description: "Your OpenAI API key has been saved securely.",
+        description: "Your Google Gemini API key has been saved securely.",
       });
       
       // If there was a pending message, send it now
       if (input.trim()) {
-        getOpenAIResponse(input.trim());
+        getGeminiResponse(input.trim());
       }
     } else {
       toast({
         title: "API Key Required",
-        description: "Please enter a valid OpenAI API key.",
+        description: "Please enter a valid Google Gemini API key.",
         variant: "destructive",
       });
     }
@@ -264,17 +264,17 @@ const ChatInterface = () => {
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>OpenAI API Key</DialogTitle>
+                <DialogTitle>Google Gemini API Key</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 py-2">
                 <div className="space-y-2">
-                  <Label htmlFor="api-key">Enter your OpenAI API Key</Label>
+                  <Label htmlFor="api-key">Enter your Google Gemini API Key</Label>
                   <Input
                     id="api-key"
                     type="password"
                     value={apiKey}
                     onChange={(e) => setApiKey(e.target.value)}
-                    placeholder="sk-..."
+                    placeholder="AIza..."
                   />
                   <p className="text-sm text-agrifirm-grey">
                     Your API key is stored only in your browser's local storage.
@@ -295,7 +295,7 @@ const ChatInterface = () => {
               <div className="space-y-2">
                 <h3 className="font-medium">About Agnes</h3>
                 <p className="text-sm text-agrifirm-grey">
-                  Agnes is your AI farming assistant powered by OpenAI. You can ask questions about:
+                  Agnes is your AI farming assistant powered by Google Gemini. You can ask questions about:
                 </p>
                 <ul className="text-sm text-agrifirm-grey space-y-1 ml-4 list-disc">
                   <li>Crop planning and planting</li>
