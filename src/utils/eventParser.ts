@@ -1,133 +1,162 @@
 
-import { parseISO, addDays, nextMonday, nextTuesday, nextWednesday, nextThursday, nextFriday, nextSaturday, nextSunday } from "date-fns";
+import { parse, isValid, addDays } from "date-fns";
 
-// Event type mapping keywords
-const eventTypeKeywords = {
-  planting: ["plant", "sow", "seed"],
-  irrigation: ["water", "irrigate", "irrigation"],
-  fertilizing: ["fertilize", "fertilizer", "feed"],
-  harvesting: ["harvest", "collect", "pick"],
-  maintenance: ["maintain", "maintenance", "repair", "check", "service"],
-};
-
-// Helper to determine event type based on message content
-export const determineEventType = (message: string): "planting" | "irrigation" | "fertilizing" | "harvesting" | "maintenance" | "other" => {
-  const lowerMessage = message.toLowerCase();
+// Helper function to extract date from text
+const extractDateFromText = (text: string): Date | null => {
+  // Try to find dates in various formats
   
-  for (const [type, keywords] of Object.entries(eventTypeKeywords)) {
-    if (keywords.some(keyword => lowerMessage.includes(keyword))) {
-      return type as any;
+  // Check for "tomorrow", "today", "next week", etc.
+  if (text.toLowerCase().includes("tomorrow")) {
+    return addDays(new Date(), 1);
+  } else if (text.toLowerCase().includes("today")) {
+    return new Date();
+  } else if (text.toLowerCase().includes("next week")) {
+    return addDays(new Date(), 7);
+  }
+  
+  // Check for day names (Monday, Tuesday, etc.)
+  const dayNames = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+  for (const dayName of dayNames) {
+    if (text.toLowerCase().includes(dayName)) {
+      const today = new Date();
+      const todayDay = today.getDay();
+      const targetDay = dayNames.indexOf(dayName);
+      let daysUntilNext = targetDay - todayDay;
+      
+      if (daysUntilNext <= 0) {
+        daysUntilNext += 7; // If today or earlier this week, get next week
+      }
+      
+      return addDays(today, daysUntilNext);
     }
   }
   
-  return "other";
-};
-
-// Parse relative date references
-export const parseRelativeDate = (dateText: string): Date | null => {
-  const today = new Date();
-  const lowerDateText = dateText.toLowerCase();
-  
-  if (lowerDateText.includes("today")) {
-    return today;
+  // Check for specific date formats like "April 15" or "4/15"
+  const monthNames = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+  for (const monthName of monthNames) {
+    const regex = new RegExp(`${monthName}\\s+(\\d{1,2})(?:\\w{2})?`, "i");
+    const match = text.match(regex);
+    
+    if (match && match[1]) {
+      const day = parseInt(match[1], 10);
+      const month = monthNames.indexOf(monthName.toLowerCase());
+      const year = new Date().getFullYear();
+      
+      // Create date (months are 0-indexed in JavaScript)
+      const date = new Date(year, month, day);
+      
+      // If the date is in the past, assume next year
+      if (date < new Date()) {
+        date.setFullYear(year + 1);
+      }
+      
+      return date;
+    }
   }
   
-  if (lowerDateText.includes("tomorrow")) {
-    return addDays(today, 1);
-  }
-  
-  if (lowerDateText.includes("next monday")) {
-    return nextMonday(today);
-  }
-  
-  if (lowerDateText.includes("next tuesday")) {
-    return nextTuesday(today);
-  }
-  
-  if (lowerDateText.includes("next wednesday")) {
-    return nextWednesday(today);
-  }
-  
-  if (lowerDateText.includes("next thursday")) {
-    return nextThursday(today);
-  }
-  
-  if (lowerDateText.includes("next friday")) {
-    return nextFriday(today);
-  }
-  
-  if (lowerDateText.includes("next saturday")) {
-    return nextSaturday(today);
-  }
-  
-  if (lowerDateText.includes("next sunday")) {
-    return nextSunday(today);
-  }
-  
-  // Handle "next week" as 7 days from now
-  if (lowerDateText.includes("next week")) {
-    return addDays(today, 7);
+  // Check for MM/DD format
+  const dateMatch = text.match(/(\d{1,2})\/(\d{1,2})/);
+  if (dateMatch) {
+    const month = parseInt(dateMatch[1], 10) - 1; // Months are 0-indexed
+    const day = parseInt(dateMatch[2], 10);
+    const year = new Date().getFullYear();
+    
+    const date = new Date(year, month, day);
+    
+    // If the date is in the past, assume next year
+    if (date < new Date()) {
+      date.setFullYear(year + 1);
+    }
+    
+    return date;
   }
   
   return null;
 };
 
-// Extract a potential event from a user message
+// Function to determine event type from text
+const determineEventType = (text: string): "planting" | "irrigation" | "fertilizing" | "harvesting" | "maintenance" | "other" => {
+  const lowerText = text.toLowerCase();
+  
+  if (/plant|seed|sow/i.test(lowerText)) {
+    return "planting";
+  } else if (/irrigat|water/i.test(lowerText)) {
+    return "irrigation";
+  } else if (/fertiliz|nutrient/i.test(lowerText)) {
+    return "fertilizing";
+  } else if (/harvest|collect|gather|pick/i.test(lowerText)) {
+    return "harvesting";
+  } else if (/maintenance|repair|check|inspect|fix/i.test(lowerText)) {
+    return "maintenance";
+  }
+  
+  return "other";
+};
+
+// Main function to extract event details from a message
 export const extractEventFromMessage = (message: string) => {
-  // First, check if this is likely a calendar command
-  const calendarActionKeywords = [
-    "schedule", "add", "create", "set up", "plan", "book", "arrange"
-  ];
-  
-  const isCalendarAction = calendarActionKeywords.some(
-    keyword => message.toLowerCase().includes(keyword)
-  );
-  
-  if (!isCalendarAction) {
+  // Look for patterns suggesting calendar events
+  if (!/schedule|calendar|event|plan|remind|add to calendar/i.test(message)) {
     return null;
   }
   
-  // Try to extract date
-  let eventDate: Date | null = null;
-  const datePatterns = [
-    // Look for patterns like "next monday", "tomorrow", etc.
-    /(?:on|for|this|next) (monday|tuesday|wednesday|thursday|friday|saturday|sunday|week|tomorrow|today)/i,
-    // Look for specific dates like "April 15" or "4/15/2025"
-    /(?:on|for) ([a-z]+ \d{1,2}(?:st|nd|rd|th)?)/i,
-  ];
-  
-  for (const pattern of datePatterns) {
-    const match = message.match(pattern);
-    if (match && match[1]) {
-      eventDate = parseRelativeDate(match[1]);
-      if (eventDate) break;
-    }
-  }
-  
-  // If no date could be extracted, default to tomorrow
-  if (!eventDate) {
-    eventDate = addDays(new Date(), 1);
-  }
-  
-  // Extract title - simple approach to get the main topic
-  let title = "New Event";
-  // Look for phrases like "Schedule a meeting" or "Plan irrigation"
-  const titleMatch = message.match(/(?:schedule|add|create|set up|plan|book|arrange) (?:a|an)? (.+?)(?:on|for|tomorrow|today|next|this|$)/i);
-  
-  if (titleMatch && titleMatch[1]) {
-    title = titleMatch[1].trim();
-    // Clean up the title by removing articles and extra words
-    title = title.replace(/^(a|an|the) /i, '');
-    title = title.charAt(0).toUpperCase() + title.slice(1);
+  // Extract the date
+  const date = extractDateFromText(message);
+  if (!date) {
+    return null;
   }
   
   // Determine event type
-  const eventType = determineEventType(message);
+  const type = determineEventType(message);
+  
+  // Extract title (this is a simplified approach)
+  let title = "";
+  
+  // Try to extract title based on common patterns
+  const patterns = [
+    /schedule\s+([^.?!]+)/i,
+    /add\s+([^.?!]+)\s+to\s+calendar/i,
+    /plan\s+([^.?!]+)/i,
+    /reminder\s+for\s+([^.?!]+)/i
+  ];
+  
+  for (const pattern of patterns) {
+    const match = message.match(pattern);
+    if (match && match[1]) {
+      title = match[1].trim();
+      // Clean up title by removing date references
+      title = title.replace(/tomorrow|today|next week|next month|on \w+ \d+|\d+\/\d+/gi, "").trim();
+      if (title) break;
+    }
+  }
+  
+  // If no title was found through patterns, create a generic one based on type
+  if (!title) {
+    switch (type) {
+      case "planting":
+        title = "Planting";
+        break;
+      case "irrigation":
+        title = "Irrigation";
+        break;
+      case "fertilizing":
+        title = "Fertilizing";
+        break;
+      case "harvesting":
+        title = "Harvesting";
+        break;
+      case "maintenance":
+        title = "Maintenance";
+        break;
+      default:
+        title = "Farm Event";
+    }
+  }
   
   return {
-    date: eventDate,
+    date,
     title,
-    type: eventType,
-    description: "", // Default to empty description
+    type,
+    description: ""
   };
 };

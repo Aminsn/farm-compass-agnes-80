@@ -1,202 +1,315 @@
 
-// This file creates an agentic framework for handling farming operations
-import { CalendarEvent, useEvents } from "@/context/EventContext";
-import { Task, useTaskContext } from "@/context/TaskContext";
-import { extractEventFromMessage } from "./eventParser";
+import { useEvents } from "@/context/EventContext";
+import { useTaskContext } from "@/context/TaskContext";
+import { useToast } from "@/hooks/use-toast";
+import { format, parse, isValid } from "date-fns";
 
-// Agent actions for different operations
-export type AgentAction = 
-  | { type: "ADD_EVENT"; event: Omit<CalendarEvent, "id"> }
-  | { type: "DELETE_EVENT"; id: string }
-  | { type: "UPDATE_EVENT"; event: CalendarEvent }
-  | { type: "ADD_TASK"; task: Omit<Task, "id"> }
-  | { type: "DELETE_TASK"; id: string }
-  | { type: "UPDATE_TASK"; task: Task }
-  | { type: "COMPLETE_TASK"; id: string }
-  | { type: "GET_TASKS" }
-  | { type: "GET_EVENTS" };
+// Define action types for our agent
+export type AgentAction = {
+  type: string;
+  parameters: Record<string, any>;
+};
 
-// Parse message to detect what actions to take
-export const parseAgentActions = (message: string): AgentAction[] => {
+// Function to parse potential agent actions from user messages
+export function parseAgentActions(message: string): AgentAction[] {
   const actions: AgentAction[] = [];
-  const lowerMessage = message.toLowerCase();
   
-  // Check for calendar event operations
-  const possibleEvent = extractEventFromMessage(message);
-  if (possibleEvent) {
+  // Look for task creation patterns
+  if (/add (a )?task|create (a )?task|new task/i.test(message)) {
+    const titleMatch = message.match(/task (for|to|called|named|about|on) ([^,.]+)/i);
+    const dateMatch = message.match(/(tomorrow|today|next (monday|tuesday|wednesday|thursday|friday|saturday|sunday)|on ([a-z]+ \d+))/i);
+    
+    if (titleMatch) {
+      const title = titleMatch[2].trim();
+      let date = new Date().toISOString().split('T')[0]; // Default to today
+      
+      if (dateMatch) {
+        if (dateMatch[0].toLowerCase().includes('tomorrow')) {
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          date = tomorrow.toISOString().split('T')[0];
+        } else if (dateMatch[0].toLowerCase().includes('next')) {
+          const dayOfWeek = dateMatch[0].toLowerCase().split(' ')[1];
+          date = getNextDayOfWeek(dayOfWeek).toISOString().split('T')[0];
+        }
+      }
+      
+      actions.push({
+        type: 'ADD_TASK',
+        parameters: {
+          title,
+          date,
+          description: "",
+          status: message.toLowerCase().includes('urgent') ? 'urgent' : 'pending'
+        }
+      });
+    }
+  }
+  
+  // Look for task completion patterns
+  if (/mark (the )?(task|"[^"]+"|\S+) (as )?complete|complete (the )?(task|"[^"]+"|\S+)/i.test(message)) {
+    const taskMatch = message.match(/mark (the )?(task|"([^"]+)"|\S+)|complete (the )?(task|"([^"]+)"|\S+)/i);
+    if (taskMatch) {
+      // Extract task name from quotes if present, otherwise use the word after task
+      let taskTitle = "";
+      if (taskMatch[3]) {
+        taskTitle = taskMatch[3];
+      } else if (taskMatch[6]) {
+        taskTitle = taskMatch[6];
+      } else {
+        const wordsAfterTaskOrComplete = message
+          .replace(/mark (the )?(task|"[^"]+"|\S+) (as )?complete|complete (the )?(task|"[^"]+"|\S+)/i, '')
+          .trim()
+          .split(' ')[0];
+        taskTitle = wordsAfterTaskOrComplete;
+      }
+      
+      actions.push({
+        type: 'COMPLETE_TASK',
+        parameters: {
+          taskTitle
+        }
+      });
+    }
+  }
+  
+  // Look for task deletion patterns
+  if (/delete (the )?(task|"[^"]+"|\S+)|remove (the )?(task|"[^"]+"|\S+)/i.test(message)) {
+    const taskMatch = message.match(/delete (the )?(task|"([^"]+)"|\S+)|remove (the )?(task|"([^"]+)"|\S+)/i);
+    if (taskMatch) {
+      // Extract task name from quotes if present, otherwise use the word after task
+      let taskTitle = "";
+      if (taskMatch[3]) {
+        taskTitle = taskMatch[3];
+      } else if (taskMatch[6]) {
+        taskTitle = taskMatch[6];
+      } else {
+        const wordsAfterTaskOrDelete = message
+          .replace(/delete (the )?(task|"[^"]+"|\S+)|remove (the )?(task|"[^"]+"|\S+)/i, '')
+          .trim()
+          .split(' ')[0];
+        taskTitle = wordsAfterTaskOrDelete;
+      }
+      
+      actions.push({
+        type: 'DELETE_TASK',
+        parameters: {
+          taskTitle
+        }
+      });
+    }
+  }
+  
+  // Look for list tasks pattern
+  if (/show( me)? (my|all|the|current) tasks|list( all| my)? tasks|what( are my| are the)? tasks/i.test(message)) {
     actions.push({
-      type: "ADD_EVENT",
-      event: possibleEvent
+      type: 'LIST_TASKS',
+      parameters: {}
     });
   }
   
-  // Check for task operations
-  if (
-    lowerMessage.includes("add task") || 
-    lowerMessage.includes("create task") ||
-    lowerMessage.includes("new task")
-  ) {
-    // Extract task details
-    const titleMatch = message.match(/task(?:\s+called|\s+named|\s+titled|\s+for)?\s+["']?([^"']+)["']?/i);
-    const dateMatch = message.match(/(today|tomorrow|next \w+|on [^,\.]+)/i);
-    const statusMatch = lowerMessage.includes("urgent") ? "urgent" : "pending";
+  // Look for calendar event patterns (these are more complex and might need refinement)
+  if (/schedule|add (an |a )?event|create (an |a )?event|add to( my)? calendar/i.test(message)) {
+    const titleMatch = message.match(/schedule ([^,.]+)|add (?:an |a )?event ([^,.]+)|create (?:an |a )?event ([^,.]+)/i);
+    const dateMatch = message.match(/(tomorrow|today|next (monday|tuesday|wednesday|thursday|friday|saturday|sunday)|on ([a-z]+ \d+))/i);
     
-    if (titleMatch && titleMatch[1]) {
+    let title = "";
+    if (titleMatch) {
+      title = (titleMatch[1] || titleMatch[2] || titleMatch[3] || "").trim();
+    }
+    
+    let date = new Date().toISOString().split('T')[0]; // Default to today
+    
+    if (dateMatch) {
+      if (dateMatch[0].toLowerCase().includes('tomorrow')) {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        date = tomorrow.toISOString().split('T')[0];
+      } else if (dateMatch[0].toLowerCase().includes('next')) {
+        const dayOfWeek = dateMatch[0].toLowerCase().split(' ')[1];
+        date = getNextDayOfWeek(dayOfWeek).toISOString().split('T')[0];
+      }
+    }
+    
+    // Try to determine the event type
+    let eventType: "planting" | "irrigation" | "fertilizing" | "harvesting" | "maintenance" | "other" = "other";
+    
+    if (/plant|seeding|sowing/i.test(message)) {
+      eventType = "planting";
+    } else if (/irrigat|water/i.test(message)) {
+      eventType = "irrigation";
+    } else if (/fertiliz|nutrient/i.test(message)) {
+      eventType = "fertilizing";
+    } else if (/harvest|collect|gather/i.test(message)) {
+      eventType = "harvesting";
+    } else if (/maintenance|repair|check|inspect/i.test(message)) {
+      eventType = "maintenance";
+    }
+    
+    if (title) {
       actions.push({
-        type: "ADD_TASK",
-        task: {
-          title: titleMatch[1].trim(),
-          description: "",
-          status: statusMatch as "pending" | "completed" | "urgent",
-          date: dateMatch ? extractDateFromText(dateMatch[1]) : new Date().toISOString().split('T')[0]
+        type: 'ADD_EVENT',
+        parameters: {
+          title,
+          date: new Date(date),
+          type: eventType,
+          description: ""
         }
       });
     }
-  }
-  
-  if (
-    lowerMessage.includes("complete task") || 
-    lowerMessage.includes("finish task") ||
-    lowerMessage.includes("mark task as done") ||
-    lowerMessage.includes("task completed")
-  ) {
-    const titleMatch = message.match(/task(?:\s+called|\s+named|\s+titled|\s+for)?\s+["']?([^"']+)["']?/i);
-    if (titleMatch && titleMatch[1]) {
-      actions.push({
-        type: "COMPLETE_TASK",
-        id: titleMatch[1].trim() // We'll use title as identifier in the executor
-      });
-    }
-  }
-  
-  if (
-    lowerMessage.includes("delete task") || 
-    lowerMessage.includes("remove task")
-  ) {
-    const titleMatch = message.match(/task(?:\s+called|\s+named|\s+titled|\s+for)?\s+["']?([^"']+)["']?/i);
-    if (titleMatch && titleMatch[1]) {
-      actions.push({
-        type: "DELETE_TASK",
-        id: titleMatch[1].trim() // We'll use title as identifier in the executor
-      });
-    }
-  }
-  
-  // List operations
-  if (lowerMessage.includes("list tasks") || lowerMessage.includes("show tasks")) {
-    actions.push({ type: "GET_TASKS" });
-  }
-  
-  if (lowerMessage.includes("list events") || lowerMessage.includes("show events")) {
-    actions.push({ type: "GET_EVENTS" });
   }
   
   return actions;
-};
+}
 
-// Helper function to extract date from text descriptions
-const extractDateFromText = (dateText: string): string => {
+// Helper function to get the next occurrence of a specific day of the week
+function getNextDayOfWeek(dayName: string): Date {
+  const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
   const today = new Date();
-  const lowerDateText = dateText.toLowerCase();
+  const targetDay = days.indexOf(dayName.toLowerCase());
   
-  if (lowerDateText.includes("today")) {
-    return today.toISOString().split('T')[0];
+  if (targetDay < 0) return today; // Invalid day name, return today
+  
+  const todayDay = today.getDay();
+  let daysUntilNext = targetDay - todayDay;
+  
+  if (daysUntilNext <= 0) {
+    daysUntilNext += 7; // If the target day is today or earlier this week, get next week's occurrence
   }
   
-  if (lowerDateText.includes("tomorrow")) {
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split('T')[0];
-  }
+  const nextDate = new Date(today);
+  nextDate.setDate(today.getDate() + daysUntilNext);
   
-  if (lowerDateText.includes("next monday")) {
-    const nextMonday = new Date(today);
-    nextMonday.setDate(today.getDate() + (1 + 7 - today.getDay()) % 7);
-    return nextMonday.toISOString().split('T')[0];
-  }
-  
-  // Add other date parsing logic as needed
-  
-  // Default to today
-  return today.toISOString().split('T')[0];
-};
+  return nextDate;
+}
 
-// Hook to execute agent actions
-export const useAgentExecutor = () => {
-  const { events, addEvent, deleteEvent, updateEvent } = useEvents();
-  const { tasks, addTask, deleteTask, updateTask, completeTask } = useTaskContext();
+// Custom hook to execute agent actions
+export function useAgentExecutor() {
+  const { addTask, deleteTask, completeTask, tasks } = useTaskContext();
+  const { addEvent, events } = useEvents();
+  const { toast } = useToast();
   
+  // Function to execute actions
   const executeActions = (actions: AgentAction[]): string[] => {
     const results: string[] = [];
     
-    for (const action of actions) {
-      switch (action.type) {
-        case "ADD_EVENT": {
-          const id = addEvent(action.event);
-          results.push(`Added event "${action.event.title}" to calendar on ${new Date(action.event.date).toLocaleDateString()}`);
-          break;
-        }
-        case "DELETE_EVENT": {
-          deleteEvent(action.id);
-          results.push(`Deleted event from calendar`);
-          break;
-        }
-        case "UPDATE_EVENT": {
-          updateEvent(action.event);
-          results.push(`Updated event "${action.event.title}" in calendar`);
-          break;
-        }
-        case "ADD_TASK": {
-          const id = addTask(action.task);
-          results.push(`Added task "${action.task.title}" to your task list`);
-          break;
-        }
-        case "DELETE_TASK": {
-          // Find task by title or ID
-          const taskToDelete = tasks.find(t => 
-            t.id === action.id || t.title.toLowerCase() === action.id.toLowerCase()
-          );
-          if (taskToDelete) {
-            deleteTask(taskToDelete.id);
-            results.push(`Deleted task "${taskToDelete.title}" from your task list`);
-          } else {
-            results.push(`Couldn't find a task matching "${action.id}"`);
+    actions.forEach(action => {
+      try {
+        switch (action.type) {
+          case 'ADD_TASK': {
+            const { title, description, date, status } = action.parameters;
+            const taskId = addTask({
+              title,
+              description,
+              date,
+              status
+            });
+            results.push(`✅ Added task "${title}" for ${format(new Date(date), 'MMMM d, yyyy')}.`);
+            toast({
+              title: "Task Added",
+              description: `"${title}" has been added to your tasks.`,
+            });
+            break;
           }
-          break;
-        }
-        case "UPDATE_TASK": {
-          updateTask(action.task);
-          results.push(`Updated task "${action.task.title}" in your task list`);
-          break;
-        }
-        case "COMPLETE_TASK": {
-          // Find task by title or ID
-          const taskToComplete = tasks.find(t => 
-            t.id === action.id || t.title.toLowerCase() === action.id.toLowerCase()
-          );
-          if (taskToComplete) {
-            completeTask(taskToComplete.id);
-            results.push(`Marked task "${taskToComplete.title}" as complete`);
-          } else {
-            results.push(`Couldn't find a task matching "${action.id}"`);
+          
+          case 'COMPLETE_TASK': {
+            const { taskTitle } = action.parameters;
+            // Find the task by partial title match
+            const task = tasks.find(t => 
+              t.title.toLowerCase().includes(taskTitle.toLowerCase()) && 
+              t.status !== 'completed'
+            );
+            
+            if (task) {
+              completeTask(task.id);
+              results.push(`✅ Marked task "${task.title}" as complete.`);
+              toast({
+                title: "Task Completed",
+                description: `"${task.title}" has been marked as complete.`,
+              });
+            } else {
+              results.push(`❌ Could not find an active task matching "${taskTitle}".`);
+            }
+            break;
           }
-          break;
+          
+          case 'DELETE_TASK': {
+            const { taskTitle } = action.parameters;
+            // Find the task by partial title match
+            const task = tasks.find(t => 
+              t.title.toLowerCase().includes(taskTitle.toLowerCase())
+            );
+            
+            if (task) {
+              deleteTask(task.id);
+              results.push(`✅ Deleted task "${task.title}".`);
+              toast({
+                title: "Task Deleted",
+                description: `"${task.title}" has been deleted.`,
+              });
+            } else {
+              results.push(`❌ Could not find a task matching "${taskTitle}".`);
+            }
+            break;
+          }
+          
+          case 'LIST_TASKS': {
+            if (tasks.length === 0) {
+              results.push("You don't have any tasks scheduled.");
+            } else {
+              const today = new Date().toISOString().split('T')[0];
+              const todayTasks = tasks.filter(task => task.date === today);
+              const upcomingTasks = tasks.filter(task => task.date > today);
+              const pendingTasks = tasks.filter(task => task.status !== 'completed');
+              
+              let taskList = "Your current tasks:\n";
+              
+              if (todayTasks.length > 0) {
+                taskList += "\nToday:\n";
+                todayTasks.forEach(task => {
+                  taskList += `- ${task.title} (${task.status})\n`;
+                });
+              }
+              
+              if (upcomingTasks.length > 0) {
+                taskList += "\nUpcoming:\n";
+                upcomingTasks.forEach(task => {
+                  taskList += `- ${task.title} (${format(new Date(task.date), 'MMM d')})\n`;
+                });
+              }
+              
+              results.push(taskList);
+            }
+            break;
+          }
+          
+          case 'ADD_EVENT': {
+            const { title, date, type, description } = action.parameters;
+            const eventId = addEvent({
+              title,
+              date,
+              type,
+              description
+            });
+            results.push(`✅ Added "${title}" to your calendar on ${format(date, 'MMMM d, yyyy')}.`);
+            toast({
+              title: "Event Added",
+              description: `"${title}" has been added to your calendar.`,
+            });
+            break;
+          }
+          
+          default:
+            results.push(`Unknown action: ${action.type}`);
         }
-        case "GET_TASKS": {
-          const taskSummary = tasks.map(t => `- ${t.title} (${t.status})`).join('\n');
-          results.push(`Your current tasks:\n${taskSummary}`);
-          break;
-        }
-        case "GET_EVENTS": {
-          const eventSummary = events.map(e => `- ${e.title} (${new Date(e.date).toLocaleDateString()})`).join('\n');
-          results.push(`Your upcoming events:\n${eventSummary}`);
-          break;
-        }
+      } catch (error) {
+        console.error(`Error executing action ${action.type}:`, error);
+        results.push(`Failed to execute ${action.type}: ${(error as Error).message}`);
       }
-    }
+    });
     
     return results;
   };
   
   return { executeActions };
-};
+}

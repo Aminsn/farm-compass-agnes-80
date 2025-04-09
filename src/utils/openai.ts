@@ -1,69 +1,30 @@
 
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
-// Types for OpenAI messages
-export type OpenAIRole = "system" | "user" | "assistant";
-
-export interface OpenAIMessage {
-  role: OpenAIRole;
+type Message = {
+  role: "system" | "user" | "assistant";
   content: string;
-}
-
-export interface OpenAIStreamPayload {
-  model: string;
-  messages: OpenAIMessage[];
-  temperature: number;
-  top_p: number;
-  frequency_penalty: number;
-  presence_penalty: number;
-  max_tokens: number;
-  stream: boolean;
-  n: number;
-}
-
-// OpenAI API configuration
-const API_URL = "https://api.openai.com/v1/chat/completions";
-const DEFAULT_MODEL = "gpt-4o";
-
-// Helper function to create a payload for OpenAI API
-export const createOpenAIPayload = (
-  messages: OpenAIMessage[],
-  apiKey: string
-): RequestInit => {
-  const payload: OpenAIStreamPayload = {
-    model: DEFAULT_MODEL,
-    messages,
-    temperature: 0.7,
-    top_p: 1,
-    frequency_penalty: 0,
-    presence_penalty: 0,
-    max_tokens: 1000,
-    stream: false,
-    n: 1,
-  };
-
-  return {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify(payload),
-  };
 };
 
-// Function to send a chat request to OpenAI
-export const sendChatRequest = async (
-  messages: OpenAIMessage[],
+export async function sendChatRequest(
+  messages: Message[],
   apiKey: string
-): Promise<string> => {
+): Promise<string> {
   try {
-    if (!apiKey) {
-      throw new Error("OpenAI API key is required");
-    }
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-3.5-turbo",
+        messages,
+        temperature: 0.7,
+        max_tokens: 1000,
+      }),
+    });
 
-    const response = await fetch(API_URL, createOpenAIPayload(messages, apiKey));
-    
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(
@@ -75,11 +36,13 @@ export const sendChatRequest = async (
     return data.choices[0].message.content;
   } catch (error) {
     console.error("OpenAI API Error:", error);
-    toast({
-      title: "Chat Error",
-      description: error instanceof Error ? error.message : "Failed to get response from Agnes",
-      variant: "destructive",
-    });
-    throw error;
+    
+    // Create the toast inside the component using the hook
+    if (typeof window !== "undefined") {
+      // This is a client-side error, we'll let the component handle it
+      throw error;
+    }
+    
+    return "I encountered an error while processing your request. Please check your API key or try again later.";
   }
-};
+}
