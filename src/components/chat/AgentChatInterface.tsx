@@ -14,6 +14,7 @@ import { useEvents } from "@/context/EventContext";
 import { format } from "date-fns";
 import { parseAgentActions, useAgentExecutor } from "@/utils/agentFramework";
 import { useTaskContext } from "@/context/TaskContext";
+import { supabase } from "@/integrations/supabase/client";
 
 type Message = {
   id: string;
@@ -38,7 +39,7 @@ const suggestedQuestions = [
   "Add a task for fertilizing tomorrow",
   "Schedule irrigation for next Tuesday",
   "Show me my current tasks",
-  "Mark 'Check Irrigation' task as completed"
+  "Tell me about my farm's soil conditions"
 ];
 
 // Initial system message to define Agnes's role
@@ -70,6 +71,36 @@ const AgentChatInterface = () => {
   const { events, addEvent, deleteEvent } = useEvents();
   const { tasks } = useTaskContext();
   const { executeActions } = useAgentExecutor();
+  const [farmDocContent, setFarmDocContent] = useState<string>("");
+  const [isDocLoading, setIsDocLoading] = useState(false);
+  const [docError, setDocError] = useState<string | null>(null);
+  
+  // Fetch farm document on first load
+  useEffect(() => {
+    const fetchFarmDocument = async () => {
+      setIsDocLoading(true);
+      setDocError(null);
+      
+      try {
+        const { data, error } = await supabase.functions.invoke('get-farm-doc');
+        
+        if (error) {
+          console.error("Error fetching farm document:", error);
+          setDocError("Failed to load farm information. Using general knowledge only.");
+        } else if (data) {
+          console.log("Farm document retrieved successfully");
+          setFarmDocContent(data.documentContent || "");
+        }
+      } catch (err) {
+        console.error("Error invoking get-farm-doc function:", err);
+        setDocError("Failed to load farm information. Using general knowledge only.");
+      } finally {
+        setIsDocLoading(false);
+      }
+    };
+    
+    fetchFarmDocument();
+  }, []);
   
   // Save API key to localStorage whenever it changes
   useEffect(() => {
@@ -84,6 +115,16 @@ const AgentChatInterface = () => {
     
     // Add system message first
     historyMessages.push(SYSTEM_MESSAGE);
+    
+    // Add farm document context if available
+    if (farmDocContent) {
+      const farmContext = {
+        role: "system" as const,
+        content: `Here is information about this specific farm that you should use when answering questions:
+        ${farmDocContent.slice(0, 8000)}` // Limit to avoid exceeding token limits
+      };
+      historyMessages.push(farmContext);
+    }
     
     // Add task and event context
     const contextMessage = {
@@ -272,6 +313,8 @@ const AgentChatInterface = () => {
         <div className="flex items-center gap-2">
           <Bot className="h-5 w-5" />
           <h2 className="font-semibold">Agnes - Your Farming Assistant</h2>
+          {isDocLoading && <span className="text-xs animate-pulse ml-2">Loading farm data...</span>}
+          {docError && <span className="text-xs text-red-200 ml-2">Using general knowledge only</span>}
         </div>
         <div className="flex gap-2">
           <Dialog open={isApiKeyDialogOpen} onOpenChange={setIsApiKeyDialogOpen}>
@@ -321,6 +364,7 @@ const AgentChatInterface = () => {
                   <li>Pest and disease control</li>
                   <li>Weather impacts</li>
                   <li>Harvest timing</li>
+                  <li>Information about your specific farm</li>
                 </ul>
                 <p className="text-sm text-agrifirm-grey mt-2">
                   <strong>Task & Calendar Management:</strong> Agnes can help you manage tasks and events.
