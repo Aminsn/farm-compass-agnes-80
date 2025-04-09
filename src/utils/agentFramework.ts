@@ -159,6 +159,35 @@ export function parseAgentActions(message: string): AgentAction[] {
     }
   }
   
+  // Look for event deletion patterns
+  if (/delete (the )?(event|"[^"]+"|\S+) from calendar|remove (the )?(event|"[^"]+"|\S+) from calendar|cancel (the )?(event|"[^"]+"|\S+)/i.test(message)) {
+    const eventMatch = message.match(/delete (the )?(event|"([^"]+)"|\S+)|remove (the )?(event|"([^"]+)"|\S+)|cancel (the )?(event|"([^"]+)"|\S+)/i);
+    if (eventMatch) {
+      // Extract event name from quotes if present, otherwise use the word after event
+      let eventTitle = "";
+      if (eventMatch[3]) {
+        eventTitle = eventMatch[3];
+      } else if (eventMatch[6]) {
+        eventTitle = eventMatch[6];
+      } else if (eventMatch[9]) {
+        eventTitle = eventMatch[9];
+      } else {
+        const wordsAfterEventOrDelete = message
+          .replace(/delete (the )?(event|"[^"]+"|\S+)|remove (the )?(event|"[^"]+"|\S+)|cancel (the )?(event|"[^"]+"|\S+)/i, '')
+          .trim()
+          .split(' ')[0];
+        eventTitle = wordsAfterEventOrDelete;
+      }
+      
+      actions.push({
+        type: 'DELETE_EVENT',
+        parameters: {
+          eventTitle
+        }
+      });
+    }
+  }
+  
   return actions;
 }
 
@@ -186,7 +215,7 @@ function getNextDayOfWeek(dayName: string): Date {
 // Custom hook to execute agent actions
 export function useAgentExecutor() {
   const { addTask, deleteTask, completeTask, tasks } = useTaskContext();
-  const { addEvent, events } = useEvents();
+  const { addEvent, deleteEvent, events } = useEvents();
   const { toast } = useToast();
   
   // Function to execute actions
@@ -296,6 +325,26 @@ export function useAgentExecutor() {
               title: "Event Added",
               description: `"${title}" has been added to your calendar.`,
             });
+            break;
+          }
+          
+          case 'DELETE_EVENT': {
+            const { eventTitle } = action.parameters;
+            // Find the event by partial title match
+            const event = events.find(e => 
+              e.title.toLowerCase().includes(eventTitle.toLowerCase())
+            );
+            
+            if (event) {
+              deleteEvent(event.id);
+              results.push(`✅ Removed "${event.title}" from your calendar.`);
+              toast({
+                title: "Event Deleted",
+                description: `"${event.title}" has been removed from your calendar.`,
+              });
+            } else {
+              results.push(`❌ Could not find an event matching "${eventTitle}".`);
+            }
             break;
           }
           

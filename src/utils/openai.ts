@@ -37,12 +37,16 @@ export async function sendChatRequest(
   } catch (error) {
     console.error("OpenAI API Error:", error);
     
-    // Create the toast inside the component using the hook
-    if (typeof window !== "undefined") {
-      // This is a client-side error, we'll let the component handle it
-      throw error;
+    if (error instanceof Error) {
+      if (error.message.includes("API key")) {
+        throw new Error("Invalid API key. Please check your OpenAI API key and try again.");
+      } else if (error.message.includes("rate limit")) {
+        throw new Error("OpenAI rate limit exceeded. Please try again in a few moments.");
+      } else if (error.message.includes("maximum context length")) {
+        throw new Error("The conversation is too long. Please clear the chat and start a new conversation.");
+      }
     }
     
-    return "I encountered an error while processing your request. Please check your API key or try again later.";
+    throw new Error("An error occurred while processing your request. Please try again later.");
   }
 }

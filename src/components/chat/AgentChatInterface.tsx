@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from "react";
-import { Send, User, Bot, HelpCircle, X, Settings, Calendar as CalendarIcon } from "lucide-react";
+import { Send, User, Bot, HelpCircle, X, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -47,23 +47,13 @@ const SYSTEM_MESSAGE = {
   content: `You are Agnes, a helpful and knowledgeable AI farming assistant with agentic capabilities. 
   Your goal is to help farmers make the best decisions for their crops and land.
   You can manage the farmer's calendar events and task list. When they ask you to create, update, or delete tasks and events, 
-  you'll take those actions and confirm what you've done.
+  you'll take those actions automatically without asking for confirmation.
   
   Provide clear, practical advice based on farming best practices.
   When you don't have specific information about a user's local conditions, acknowledge this
   and give general guidance while suggesting they consult local agricultural experts.
   Keep your responses concise and farmer-friendly, avoiding overly technical language.
   Focus on sustainable farming practices when appropriate.`
-};
-
-type EventConfirmation = {
-  event: {
-    date: Date;
-    title: string;
-    type: "planting" | "irrigation" | "fertilizing" | "harvesting" | "maintenance" | "other";
-    description: string;
-  };
-  showConfirmation: boolean;
 };
 
 const AgentChatInterface = () => {
@@ -77,20 +67,9 @@ const AgentChatInterface = () => {
     return localStorage.getItem("openai_api_key") || "";
   });
   const [isApiKeyDialogOpen, setIsApiKeyDialogOpen] = useState(false);
-  const { events, addEvent } = useEvents();
+  const { events, addEvent, deleteEvent } = useEvents();
   const { tasks } = useTaskContext();
   const { executeActions } = useAgentExecutor();
-  
-  // State for confirming calendar events
-  const [eventConfirmation, setEventConfirmation] = useState<EventConfirmation>({
-    event: {
-      date: new Date(),
-      title: "",
-      type: "other",
-      description: ""
-    },
-    showConfirmation: false
-  });
   
   // Save API key to localStorage whenever it changes
   useEffect(() => {
@@ -143,6 +122,26 @@ const AgentChatInterface = () => {
     return results.join("\n");
   };
 
+  // Auto-create calendar event from message without confirmation
+  const autoCreateEventFromMessage = (message: string) => {
+    const possibleEvent = extractEventFromMessage(message);
+    
+    if (possibleEvent) {
+      // Add the event to the calendar automatically
+      const eventId = addEvent(possibleEvent);
+      
+      // Show a toast notification
+      toast({
+        title: "Event Added",
+        description: `"${possibleEvent.title}" has been added to your calendar.`,
+      });
+      
+      return `I've added "${possibleEvent.title}" to your calendar on ${format(possibleEvent.date, 'EEEE, MMMM d, yyyy')}.`;
+    }
+    
+    return "";
+  };
+
   // Send message to OpenAI and get response
   const getOpenAIResponse = async (question: string) => {
     // Add user message
@@ -157,17 +156,6 @@ const AgentChatInterface = () => {
     setInput("");
     setIsTyping(true);
     
-    // First, check if this is a calendar-related request
-    const possibleEvent = extractEventFromMessage(question);
-    
-    if (possibleEvent) {
-      // Show confirmation dialog for the event
-      setEventConfirmation({
-        event: possibleEvent,
-        showConfirmation: true
-      });
-    }
-    
     try {
       // Check if API key is available
       if (!apiKey) {
@@ -179,15 +167,22 @@ const AgentChatInterface = () => {
       // Process any agent actions in the message
       const agentResults = processAgentActions(question);
       
+      // Automatically create event from the message if possible
+      const eventResult = autoCreateEventFromMessage(question);
+      
       // Prepare messages for API
       const apiMessages = prepareMessagesForAPI(question);
       
       // Get response from OpenAI
       let responseContent = await sendChatRequest(apiMessages, apiKey);
       
-      // If we performed agent actions, add them to the response
-      if (agentResults) {
-        responseContent = `${agentResults}\n\n${responseContent}`;
+      // If we performed agent actions or created an event, add them to the response
+      let agentActions = [];
+      if (agentResults) agentActions.push(agentResults);
+      if (eventResult) agentActions.push(eventResult);
+      
+      if (agentActions.length > 0) {
+        responseContent = `${agentActions.join("\n\n")}\n\n${responseContent}`;
       }
       
       // Add Agnes response
@@ -205,54 +200,6 @@ const AgentChatInterface = () => {
     } finally {
       setIsTyping(false);
     }
-  };
-
-  // Handle event confirmation
-  const handleConfirmEvent = () => {
-    const { event } = eventConfirmation;
-    
-    // Add the event to the calendar
-    const eventId = addEvent(event);
-    
-    // Close the confirmation dialog
-    setEventConfirmation(prev => ({
-      ...prev,
-      showConfirmation: false
-    }));
-    
-    // Add a message from Agnes confirming the event was added
-    const confirmationMessage: Message = {
-      id: Date.now().toString(),
-      content: `I've added "${event.title}" to your calendar on ${format(event.date, 'EEEE, MMMM d, yyyy')}. You can view and manage it in your planning calendar.`,
-      sender: "assistant",
-      timestamp: new Date()
-    };
-    
-    setMessages(prev => [...prev, confirmationMessage]);
-    
-    // Show a toast notification
-    toast({
-      title: "Event Added",
-      description: `"${event.title}" has been added to your calendar.`,
-    });
-  };
-  
-  // Cancel event addition
-  const handleCancelEvent = () => {
-    setEventConfirmation(prev => ({
-      ...prev,
-      showConfirmation: false
-    }));
-    
-    // Add a message from Agnes that the event wasn't added
-    const cancelMessage: Message = {
-      id: Date.now().toString(),
-      content: "I've cancelled adding that event to your calendar. Is there anything else I can help you with?",
-      sender: "assistant",
-      timestamp: new Date()
-    };
-    
-    setMessages(prev => [...prev, cancelMessage]);
   };
 
   const handleSendMessage = () => {
@@ -398,49 +345,6 @@ const AgentChatInterface = () => {
           </Button>
         </div>
       </div>
-      
-      {/* Event Confirmation Dialog */}
-      <Dialog 
-        open={eventConfirmation.showConfirmation} 
-        onOpenChange={(open) => {
-          if (!open) handleCancelEvent();
-          setEventConfirmation(prev => ({...prev, showConfirmation: open}));
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <CalendarIcon className="h-5 w-5 text-agrifirm-green" />
-              Add Event to Calendar
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label>Event Details</Label>
-              <div className="rounded-md border p-3 space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium">Title:</span>
-                  <span className="text-sm">{eventConfirmation.event.title}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium">Date:</span>
-                  <span className="text-sm">{format(eventConfirmation.event.date, 'EEEE, MMMM d, yyyy')}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium">Type:</span>
-                  <span className="text-sm capitalize">{eventConfirmation.event.type}</span>
-                </div>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={handleCancelEvent}>Cancel</Button>
-              <Button onClick={handleConfirmEvent} className="bg-agrifirm-green hover:bg-agrifirm-green/90">
-                Add to Calendar
-              </Button>
-            </DialogFooter>
-          </div>
-        </DialogContent>
-      </Dialog>
       
       <ScrollArea className="flex-1 p-4 bg-agrifirm-light-yellow-2/20">
         <div className="space-y-4">
