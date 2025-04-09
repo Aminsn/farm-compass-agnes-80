@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Calendar as CalendarUI } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -65,7 +64,6 @@ const PlanningCalendar = () => {
   const [events, setEvents] = useState<CalendarEvent[]>(sampleEvents);
   const [view, setView] = useState<"calendar" | "list">("calendar");
 
-  // Find events for a specific date
   const getEventsForDate = (date: Date | undefined) => {
     if (!date) return [];
     
@@ -76,15 +74,12 @@ const PlanningCalendar = () => {
     );
   };
 
-  // Get selected date events
   const selectedDateEvents = getEventsForDate(date);
 
-  // Function to format date as month and year
   const formatMonthYear = (date: Date) => {
     return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   };
 
-  // Get all events for the current month
   const getCurrentMonthEvents = () => {
     if (!date) return [];
     
@@ -94,7 +89,7 @@ const PlanningCalendar = () => {
     ).sort((a, b) => a.date.getTime() - b.date.getTime());
   };
 
-  const highlightedDays = events.map(event => 
+  const eventDays = events.map(event => 
     new Date(
       event.date.getFullYear(),
       event.date.getMonth(),
@@ -102,7 +97,6 @@ const PlanningCalendar = () => {
     )
   );
 
-  // Get current month events for list view
   const currentMonthEvents = getCurrentMonthEvents();
 
   return (
@@ -172,9 +166,8 @@ const PlanningCalendar = () => {
                 selected={date}
                 onSelect={setDate}
                 className="rounded-md border"
-                highlightedDays={highlightedDays}
                 modifiers={{
-                  highlighted: highlightedDays,
+                  highlighted: eventDays,
                 }}
                 modifiersClassNames={{
                   highlighted: "bg-agrifirm-light-yellow-2 font-bold text-black",
