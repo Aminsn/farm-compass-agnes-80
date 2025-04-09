@@ -1,14 +1,17 @@
 
 import React, { useState, useRef, useEffect } from "react";
-import { Send, User, Bot, HelpCircle, X, Settings } from "lucide-react";
+import { Send, User, Bot, HelpCircle, X, Settings, Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { sendChatRequest } from "@/utils/openai";
+import { extractEventFromMessage } from "@/utils/eventParser";
+import { useEvents } from "@/context/EventContext";
+import { format } from "date-fns";
 
 type Message = {
   id: string;
@@ -21,7 +24,7 @@ type Message = {
 const initialMessages: Message[] = [
   {
     id: "1",
-    content: "Hello! I'm Agnes, your farming assistant. How can I help you today?",
+    content: "Hello! I'm Agnes, your farming assistant. I can help with farming advice and manage your calendar. Try saying 'Schedule irrigation for next Tuesday' or ask me about farming practices!",
     sender: "assistant",
     timestamp: new Date()
   }
@@ -30,9 +33,9 @@ const initialMessages: Message[] = [
 // Sample suggested questions
 const suggestedQuestions = [
   "When is the best time to plant corn?",
-  "How can I improve soil quality?",
-  "What fertilizer should I use for wheat?",
-  "How to prevent common crop diseases?",
+  "Schedule a maintenance task for tomorrow",
+  "Add fertilizing to my calendar for next week",
+  "Plan harvesting for next Monday",
   "What's the optimal irrigation schedule for soybeans?"
 ];
 
@@ -45,7 +48,18 @@ const SYSTEM_MESSAGE = {
   When you don't have specific information about a user's local conditions, acknowledge this
   and give general guidance while suggesting they consult local agricultural experts.
   Keep your responses concise and farmer-friendly, avoiding overly technical language.
-  Focus on sustainable farming practices when appropriate.`
+  Focus on sustainable farming practices when appropriate.
+  You can also help manage the farmer's calendar - you'll let them know when you've added events.`
+};
+
+type EventConfirmation = {
+  event: {
+    date: Date;
+    title: string;
+    type: "planting" | "irrigation" | "fertilizing" | "harvesting" | "maintenance" | "other";
+    description: string;
+  };
+  showConfirmation: boolean;
 };
 
 const ChatInterface = () => {
@@ -59,6 +73,18 @@ const ChatInterface = () => {
     return localStorage.getItem("openai_api_key") || "";
   });
   const [isApiKeyDialogOpen, setIsApiKeyDialogOpen] = useState(false);
+  const { events, addEvent } = useEvents();
+  
+  // State for confirming calendar events
+  const [eventConfirmation, setEventConfirmation] = useState<EventConfirmation>({
+    event: {
+      date: new Date(),
+      title: "",
+      type: "other",
+      description: ""
+    },
+    showConfirmation: false
+  });
   
   // Save API key to localStorage whenever it changes
   useEffect(() => {
@@ -107,6 +133,17 @@ const ChatInterface = () => {
     setInput("");
     setIsTyping(true);
     
+    // First, check if this is a calendar-related request
+    const possibleEvent = extractEventFromMessage(question);
+    
+    if (possibleEvent) {
+      // Show confirmation dialog for the event
+      setEventConfirmation({
+        event: possibleEvent,
+        showConfirmation: true
+      });
+    }
+    
     try {
       // Check if API key is available
       if (!apiKey) {
@@ -138,50 +175,52 @@ const ChatInterface = () => {
     }
   };
 
-  // Legacy function for local responses without API (fallback)
-  const simulateResponse = (question: string) => {
-    // Add user message
-    const userMessage: Message = {
+  // Handle event confirmation
+  const handleConfirmEvent = () => {
+    const { event } = eventConfirmation;
+    
+    // Add the event to the calendar
+    const eventId = addEvent(event);
+    
+    // Close the confirmation dialog
+    setEventConfirmation(prev => ({
+      ...prev,
+      showConfirmation: false
+    }));
+    
+    // Add a message from Agnes confirming the event was added
+    const confirmationMessage: Message = {
       id: Date.now().toString(),
-      content: question,
-      sender: "user",
+      content: `I've added "${event.title}" to your calendar on ${format(event.date, 'EEEE, MMMM d, yyyy')}. You can view and manage it in your planning calendar.`,
+      sender: "assistant",
       timestamp: new Date()
     };
     
-    setMessages(prev => [...prev, userMessage]);
-    setInput("");
-    setIsTyping(true);
+    setMessages(prev => [...prev, confirmationMessage]);
     
-    // Simulate Agnes typing
-    setTimeout(() => {
-      let response = "";
-      
-      // Generate responses based on keywords in the question
-      if (question.toLowerCase().includes("plant") || question.toLowerCase().includes("planting")) {
-        response = "The best planting time depends on your local climate and the crop. For corn in temperate regions, late spring when soil temperatures reach 60°F (16°C) is ideal. Make sure to check your local frost dates and soil conditions before planting.";
-      } else if (question.toLowerCase().includes("soil")) {
-        response = "Improving soil quality involves regular testing, adding organic matter (like compost), practicing crop rotation, and using cover crops. Maintaining proper pH levels and avoiding soil compaction are also important practices.";
-      } else if (question.toLowerCase().includes("fertilizer")) {
-        response = "For wheat, a balanced NPK fertilizer with emphasis on nitrogen is typically recommended. Apply nitrogen in split applications - at planting and again at the jointing stage. Soil tests can help determine exact nutrient needs for your specific fields.";
-      } else if (question.toLowerCase().includes("disease") || question.toLowerCase().includes("pest")) {
-        response = "Preventing crop diseases starts with good field hygiene, crop rotation, and selecting resistant varieties. Regular monitoring, proper spacing for air circulation, and targeted treatments when necessary are key practices. Would you like information about a specific crop disease?";
-      } else if (question.toLowerCase().includes("irrigation") || question.toLowerCase().includes("water")) {
-        response = "For soybeans, the critical irrigation periods are during flowering and pod development. Generally, soybeans need about 1-1.5 inches of water per week. Using soil moisture sensors can help determine the optimal timing for irrigation.";
-      } else {
-        response = "That's a good question about farming. To give you the most accurate information, I'd need to know more about your specific location, climate, and growing conditions. Can you provide more details?";
-      }
-      
-      // Add Agnes response
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: response,
-        sender: "assistant",
-        timestamp: new Date()
-      };
-      
-      setMessages(prev => [...prev, assistantMessage]);
-      setIsTyping(false);
-    }, 1500);
+    // Show a toast notification
+    toast({
+      title: "Event Added",
+      description: `"${event.title}" has been added to your calendar.`,
+    });
+  };
+  
+  // Cancel event addition
+  const handleCancelEvent = () => {
+    setEventConfirmation(prev => ({
+      ...prev,
+      showConfirmation: false
+    }));
+    
+    // Add a message from Agnes that the event wasn't added
+    const cancelMessage: Message = {
+      id: Date.now().toString(),
+      content: "I've cancelled adding that event to your calendar. Is there anything else I can help you with?",
+      sender: "assistant",
+      timestamp: new Date()
+    };
+    
+    setMessages(prev => [...prev, cancelMessage]);
   };
 
   const handleSendMessage = () => {
@@ -304,6 +343,15 @@ const ChatInterface = () => {
                   <li>Weather impacts</li>
                   <li>Harvest timing</li>
                 </ul>
+                <p className="text-sm text-agrifirm-grey mt-2">
+                  <strong>Calendar Management:</strong> Agnes can also help you manage your farm calendar.
+                  Try asking things like:
+                </p>
+                <ul className="text-sm text-agrifirm-grey space-y-1 ml-4 list-disc">
+                  <li>Schedule irrigation for next Tuesday</li>
+                  <li>Add a planting task for tomorrow</li>
+                  <li>Set up a maintenance check next week</li>
+                </ul>
               </div>
             </PopoverContent>
           </Popover>
@@ -317,6 +365,49 @@ const ChatInterface = () => {
           </Button>
         </div>
       </div>
+      
+      {/* Event Confirmation Dialog */}
+      <Dialog 
+        open={eventConfirmation.showConfirmation} 
+        onOpenChange={(open) => {
+          if (!open) handleCancelEvent();
+          setEventConfirmation(prev => ({...prev, showConfirmation: open}));
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CalendarIcon className="h-5 w-5 text-agrifirm-green" />
+              Add Event to Calendar
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Event Details</Label>
+              <div className="rounded-md border p-3 space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium">Title:</span>
+                  <span className="text-sm">{eventConfirmation.event.title}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium">Date:</span>
+                  <span className="text-sm">{format(eventConfirmation.event.date, 'EEEE, MMMM d, yyyy')}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium">Type:</span>
+                  <span className="text-sm capitalize">{eventConfirmation.event.type}</span>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={handleCancelEvent}>Cancel</Button>
+              <Button onClick={handleConfirmEvent} className="bg-agrifirm-green hover:bg-agrifirm-green/90">
+                Add to Calendar
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
       
       <ScrollArea className="flex-1 p-4 bg-agrifirm-light-yellow-2/20">
         <div className="space-y-4">
@@ -389,7 +480,7 @@ const ChatInterface = () => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask Agnes about farming..."
+            placeholder="Ask Agnes about farming or schedule events..."
             className="flex-1 resize-none border rounded-md p-2 h-12 farm-input"
             rows={1}
           />

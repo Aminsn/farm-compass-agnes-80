@@ -1,48 +1,13 @@
+
 import React, { useState } from "react";
 import { Calendar as CalendarUI } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
+import { useEvents } from "@/context/EventContext";
 
-// Sample calendar event data
-type CalendarEvent = {
-  id: string;
-  date: Date;
-  title: string;
-  description?: string;
-  type: "planting" | "irrigation" | "fertilizing" | "harvesting" | "maintenance" | "other";
-};
-
-const sampleEvents: CalendarEvent[] = [
-  {
-    id: "1",
-    date: new Date(2025, 3, 10), // April 10, 2025
-    title: "Plant Corn",
-    description: "North and East fields",
-    type: "planting"
-  },
-  {
-    id: "2",
-    date: new Date(2025, 3, 12), // April 12, 2025
-    title: "Tractor Maintenance",
-    type: "maintenance"
-  },
-  {
-    id: "3",
-    date: new Date(2025, 3, 15), // April 15, 2025
-    title: "Irrigation - South Field",
-    type: "irrigation"
-  },
-  {
-    id: "4",
-    date: new Date(2025, 3, 18), // April 18, 2025
-    title: "Apply Fertilizer",
-    description: "All fields",
-    type: "fertilizing"
-  }
-];
-
-const getEventTypeColor = (type: CalendarEvent["type"]) => {
+// Get event type color function
+const getEventTypeColor = (type: string) => {
   switch (type) {
     case "planting":
       return "bg-agrifirm-light-green";
@@ -61,8 +26,8 @@ const getEventTypeColor = (type: CalendarEvent["type"]) => {
 
 const PlanningCalendar = () => {
   const [date, setDate] = useState<Date | undefined>(new Date());
-  const [events, setEvents] = useState<CalendarEvent[]>(sampleEvents);
   const [view, setView] = useState<"calendar" | "list">("calendar");
+  const { events } = useEvents();
 
   const getEventsForDate = (date: Date | undefined) => {
     if (!date) return [];

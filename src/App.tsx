@@ -9,25 +9,28 @@ import Dashboard from "./pages/Dashboard";
 import Planning from "./pages/Planning";
 import Chat from "./pages/Chat";
 import NotFound from "./pages/NotFound";
+import { EventProvider } from "./context/EventContext";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />}>
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="planning" element={<Planning />} />
-            <Route path="chat" element={<Chat />} />
-          </Route>
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <EventProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />}>
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="planning" element={<Planning />} />
+              <Route path="chat" element={<Chat />} />
+            </Route>
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </EventProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
