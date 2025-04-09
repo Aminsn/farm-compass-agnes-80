@@ -1,7 +1,6 @@
 
 import React from "react";
 import { Helmet } from "react-helmet";
-import { Outlet } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Dashboard from "./Dashboard";
 
@@ -16,7 +15,6 @@ const Index = () => {
         <Navbar />
         <main>
           <Dashboard />
-          <Outlet />
         </main>
       </div>
     </>

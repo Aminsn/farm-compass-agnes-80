@@ -36,16 +36,7 @@ const Navbar = () => {
               </Button>
             </div>
           ) : (
-            <nav className="flex items-center space-x-6">
-              <Link to="/" className="text-agrifirm-black hover:text-agrifirm-green font-medium">
-                Dashboard
-              </Link>
-              <Link to="/planning" className="text-agrifirm-black hover:text-agrifirm-green font-medium">
-                Planning
-              </Link>
-              <Link to="/chat" className="text-agrifirm-black hover:text-agrifirm-green font-medium">
-                Ask Agnes
-              </Link>
+            <div className="flex items-center space-x-4">
               <Button 
                 variant="ghost" 
                 size="icon"
@@ -53,7 +44,7 @@ const Navbar = () => {
               >
                 <Sun size={18} />
               </Button>
-            </nav>
+            </div>
           )}
         </div>
 
@@ -67,20 +58,6 @@ const Navbar = () => {
                 onClick={() => setIsMenuOpen(false)}
               >
                 Dashboard
-              </Link>
-              <Link 
-                to="/planning" 
-                className="text-agrifirm-black hover:text-agrifirm-green font-medium px-2 py-1"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Planning
-              </Link>
-              <Link 
-                to="/chat" 
-                className="text-agrifirm-black hover:text-agrifirm-green font-medium px-2 py-1"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Ask Agnes
               </Link>
             </nav>
           </div>
