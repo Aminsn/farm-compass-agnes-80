@@ -1,10 +1,14 @@
 
 import React, { useState, useRef, useEffect } from "react";
-import { Send, User, Bot, HelpCircle, X } from "lucide-react";
+import { Send, User, Bot, HelpCircle, X, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { sendChatRequest, OpenAIMessage } from "@/utils/openai";
 
 type Message = {
   id: string;
@@ -32,14 +36,109 @@ const suggestedQuestions = [
   "What's the optimal irrigation schedule for soybeans?"
 ];
 
+// Initial system message to define Agnes's role
+const SYSTEM_MESSAGE: OpenAIMessage = {
+  role: "system",
+  content: `You are Agnes, a helpful and knowledgeable AI farming assistant. 
+  Your goal is to help farmers make the best decisions for their crops and land.
+  Provide clear, practical advice based on farming best practices.
+  When you don't have specific information about a user's local conditions, acknowledge this
+  and give general guidance while suggesting they consult local agricultural experts.
+  Keep your responses concise and farmer-friendly, avoiding overly technical language.
+  Focus on sustainable farming practices when appropriate.`
+};
+
 const ChatInterface = () => {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const [apiKey, setApiKey] = useState<string>(() => {
+    // Try to get API key from localStorage if available
+    return localStorage.getItem("openai_api_key") || "";
+  });
+  const [isApiKeyDialogOpen, setIsApiKeyDialogOpen] = useState(false);
+  
+  // Save API key to localStorage whenever it changes
+  useEffect(() => {
+    if (apiKey) {
+      localStorage.setItem("openai_api_key", apiKey);
+    }
+  }, [apiKey]);
 
-  // Simulate Agnes typing and response
+  // Convert chat history to OpenAI message format
+  const prepareMessagesForAPI = (userMessage: string): OpenAIMessage[] => {
+    const historyMessages: OpenAIMessage[] = [];
+    
+    // Add system message first
+    historyMessages.push(SYSTEM_MESSAGE);
+    
+    // Add up to 10 most recent messages from chat history (to stay within context limits)
+    const recentMessages = messages.slice(-10);
+    
+    recentMessages.forEach(msg => {
+      historyMessages.push({
+        role: msg.sender === "user" ? "user" : "assistant",
+        content: msg.content
+      });
+    });
+    
+    // Add the new user message
+    historyMessages.push({
+      role: "user",
+      content: userMessage
+    });
+    
+    return historyMessages;
+  };
+
+  // Send message to OpenAI and get response
+  const getOpenAIResponse = async (question: string) => {
+    // Add user message
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      content: question,
+      sender: "user",
+      timestamp: new Date()
+    };
+    
+    setMessages(prev => [...prev, userMessage]);
+    setInput("");
+    setIsTyping(true);
+    
+    try {
+      // Check if API key is available
+      if (!apiKey) {
+        setIsApiKeyDialogOpen(true);
+        setIsTyping(false);
+        return;
+      }
+      
+      // Prepare messages for API
+      const apiMessages = prepareMessagesForAPI(question);
+      
+      // Get response from OpenAI
+      const responseContent = await sendChatRequest(apiMessages, apiKey);
+      
+      // Add Agnes response
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: responseContent,
+        sender: "assistant",
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, assistantMessage]);
+    } catch (error) {
+      // Error is already handled in sendChatRequest
+      console.error("Failed to get response:", error);
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
+  // Legacy function for local responses without API (fallback)
   const simulateResponse = (question: string) => {
     // Add user message
     const userMessage: Message = {
@@ -87,7 +186,13 @@ const ChatInterface = () => {
 
   const handleSendMessage = () => {
     if (input.trim()) {
-      simulateResponse(input.trim());
+      // Use OpenAI if API key is available, otherwise use simulated responses
+      if (apiKey) {
+        getOpenAIResponse(input.trim());
+      } else {
+        // Show dialog to enter API key
+        setIsApiKeyDialogOpen(true);
+      }
     }
   };
 
@@ -100,7 +205,11 @@ const ChatInterface = () => {
 
   const handleSuggestedQuestion = (question: string) => {
     setInput(question);
-    simulateResponse(question);
+    if (apiKey) {
+      getOpenAIResponse(question);
+    } else {
+      setIsApiKeyDialogOpen(true);
+    }
   };
 
   const clearChat = () => {
@@ -109,6 +218,29 @@ const ChatInterface = () => {
       title: "Chat cleared",
       description: "Your conversation has been reset.",
     });
+  };
+
+  // Save API key and close dialog
+  const saveApiKey = () => {
+    if (apiKey.trim()) {
+      localStorage.setItem("openai_api_key", apiKey);
+      setIsApiKeyDialogOpen(false);
+      toast({
+        title: "API Key Saved",
+        description: "Your OpenAI API key has been saved securely.",
+      });
+      
+      // If there was a pending message, send it now
+      if (input.trim()) {
+        getOpenAIResponse(input.trim());
+      }
+    } else {
+      toast({
+        title: "API Key Required",
+        description: "Please enter a valid OpenAI API key.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Scroll to bottom when messages change
@@ -124,6 +256,35 @@ const ChatInterface = () => {
           <h2 className="font-semibold">Agnes - Your Farming Assistant</h2>
         </div>
         <div className="flex gap-2">
+          <Dialog open={isApiKeyDialogOpen} onOpenChange={setIsApiKeyDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="ghost" size="icon" className="text-white hover:bg-agrifirm-green/80">
+                <Settings className="h-5 w-5" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>OpenAI API Key</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-2">
+                <div className="space-y-2">
+                  <Label htmlFor="api-key">Enter your OpenAI API Key</Label>
+                  <Input
+                    id="api-key"
+                    type="password"
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    placeholder="sk-..."
+                  />
+                  <p className="text-sm text-agrifirm-grey">
+                    Your API key is stored only in your browser's local storage.
+                  </p>
+                </div>
+                <Button onClick={saveApiKey} className="w-full">Save API Key</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+          
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="ghost" size="icon" className="text-white hover:bg-agrifirm-green/80">
@@ -134,7 +295,7 @@ const ChatInterface = () => {
               <div className="space-y-2">
                 <h3 className="font-medium">About Agnes</h3>
                 <p className="text-sm text-agrifirm-grey">
-                  Agnes is your AI farming assistant. You can ask questions about:
+                  Agnes is your AI farming assistant powered by OpenAI. You can ask questions about:
                 </p>
                 <ul className="text-sm text-agrifirm-grey space-y-1 ml-4 list-disc">
                   <li>Crop planning and planting</li>
