@@ -27,7 +27,7 @@ type Message = {
 const initialMessages: Message[] = [
   {
     id: "1",
-    content: "Hello! I'm Agnes, your farming assistant. I can help with farming advice and manage your calendar and tasks. Try asking me to add a task, schedule an event, or ask about farming practices!",
+    content: "Hello! I'm Agnes, your farming assistant. I can help with farming advice and manage your calendar and tasks. I now have access to your farm's knowledge base to provide more specific information about your farm. Try asking me about your farm or agricultural practices!",
     sender: "assistant",
     timestamp: new Date()
   }
@@ -35,11 +35,11 @@ const initialMessages: Message[] = [
 
 // Sample suggested questions
 const suggestedQuestions = [
-  "When is the best time to plant corn?",
+  "Tell me about my farm's soil conditions",
+  "What crops am I currently growing?",
   "Add a task for fertilizing tomorrow",
   "Schedule irrigation for next Tuesday",
-  "Show me my current tasks",
-  "Tell me about my farm's soil conditions"
+  "What's the recommended irrigation schedule for my farm?"
 ];
 
 // Initial system message to define Agnes's role
@@ -49,6 +49,9 @@ const SYSTEM_MESSAGE = {
   Your goal is to help farmers make the best decisions for their crops and land.
   You can manage the farmer's calendar events and task list. When they ask you to create, update, or delete tasks and events, 
   you'll take those actions automatically without asking for confirmation.
+  
+  You have access to specific information about the farmer's farm through their farm knowledge base and documents.
+  Reference this information when answering questions about their specific farm conditions, crops, practices, etc.
   
   Provide clear, practical advice based on farming best practices.
   When you don't have specific information about a user's local conditions, acknowledge this
@@ -72,34 +75,47 @@ const AgentChatInterface = () => {
   const { tasks } = useTaskContext();
   const { executeActions } = useAgentExecutor();
   const [farmDocContent, setFarmDocContent] = useState<string>("");
+  const [externalKnowledgeBase, setExternalKnowledgeBase] = useState<string>("");
   const [isDocLoading, setIsDocLoading] = useState(false);
   const [docError, setDocError] = useState<string | null>(null);
   
-  // Fetch farm document on first load
+  // Fetch farm document and external knowledge base on first load
   useEffect(() => {
-    const fetchFarmDocument = async () => {
+    const fetchFarmInformation = async () => {
       setIsDocLoading(true);
       setDocError(null);
       
       try {
-        const { data, error } = await supabase.functions.invoke('get-farm-doc');
+        // Fetch farm document from storage
+        const { data: farmDocData, error: farmDocError } = await supabase.functions.invoke('get-farm-doc');
         
-        if (error) {
-          console.error("Error fetching farm document:", error);
-          setDocError("Failed to load farm information. Using general knowledge only.");
-        } else if (data) {
+        if (farmDocError) {
+          console.error("Error fetching farm document:", farmDocError);
+          setDocError("Failed to load farm document. Using general knowledge only.");
+        } else if (farmDocData) {
           console.log("Farm document retrieved successfully");
-          setFarmDocContent(data.documentContent || "");
+          setFarmDocContent(farmDocData.documentContent || "");
+        }
+        
+        // Fetch external knowledge base
+        const { data: externalKnowledgeData, error: externalKnowledgeError } = await supabase.functions.invoke('get-external-knowledge');
+        
+        if (externalKnowledgeError) {
+          console.error("Error fetching external knowledge base:", externalKnowledgeError);
+          setDocError((prev) => prev ? `${prev} And failed to load external knowledge base.` : "Failed to load external knowledge base. Using general knowledge only.");
+        } else if (externalKnowledgeData) {
+          console.log("External knowledge base retrieved successfully");
+          setExternalKnowledgeBase(externalKnowledgeData.knowledgeBaseContent || "");
         }
       } catch (err) {
-        console.error("Error invoking get-farm-doc function:", err);
+        console.error("Error invoking Supabase functions:", err);
         setDocError("Failed to load farm information. Using general knowledge only.");
       } finally {
         setIsDocLoading(false);
       }
     };
     
-    fetchFarmDocument();
+    fetchFarmInformation();
   }, []);
   
   // Save API key to localStorage whenever it changes
@@ -117,11 +133,21 @@ const AgentChatInterface = () => {
     historyMessages.push(SYSTEM_MESSAGE);
     
     // Add farm document context if available
+    const farmContextSources = [];
+    
     if (farmDocContent) {
+      farmContextSources.push(`FARM DOCUMENT: ${farmDocContent.slice(0, 4000)}`); // Limit to avoid exceeding token limits
+    }
+    
+    if (externalKnowledgeBase) {
+      farmContextSources.push(`FARM KNOWLEDGE BASE: ${externalKnowledgeBase.slice(0, 4000)}`); // Limit to avoid exceeding token limits
+    }
+    
+    if (farmContextSources.length > 0) {
       const farmContext = {
         role: "system" as const,
         content: `Here is information about this specific farm that you should use when answering questions:
-        ${farmDocContent.slice(0, 8000)}` // Limit to avoid exceeding token limits
+        ${farmContextSources.join("\n\n")}`
       };
       historyMessages.push(farmContext);
     }
@@ -314,7 +340,7 @@ const AgentChatInterface = () => {
           <Bot className="h-5 w-5" />
           <h2 className="font-semibold">Agnes - Your Farming Assistant</h2>
           {isDocLoading && <span className="text-xs animate-pulse ml-2">Loading farm data...</span>}
-          {docError && <span className="text-xs text-red-200 ml-2">Using general knowledge only</span>}
+          {docError && <span className="text-xs text-red-200 ml-2">Using partial knowledge only</span>}
         </div>
         <div className="flex gap-2">
           <Dialog open={isApiKeyDialogOpen} onOpenChange={setIsApiKeyDialogOpen}>
@@ -359,12 +385,12 @@ const AgentChatInterface = () => {
                   Agnes is your AI farming assistant powered by OpenAI. You can ask about:
                 </p>
                 <ul className="text-sm text-agrifirm-grey space-y-1 ml-4 list-disc">
+                  <li>Your specific farm conditions from the knowledge base</li>
                   <li>Crop planning and planting</li>
                   <li>Soil management</li>
                   <li>Pest and disease control</li>
                   <li>Weather impacts</li>
                   <li>Harvest timing</li>
-                  <li>Information about your specific farm</li>
                 </ul>
                 <p className="text-sm text-agrifirm-grey mt-2">
                   <strong>Task & Calendar Management:</strong> Agnes can help you manage tasks and events.
@@ -461,7 +487,7 @@ const AgentChatInterface = () => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask Agnes about farming or manage tasks and events..."
+            placeholder="Ask Agnes about your farm or manage tasks and events..."
             className="flex-1 resize-none border rounded-md p-2 h-12 farm-input"
             rows={1}
           />

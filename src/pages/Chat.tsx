@@ -1,6 +1,6 @@
 
 import React from "react";
-import ChatInterface from "@/components/chat/ChatInterface";
+import AgentChatInterface from "@/components/chat/AgentChatInterface";
 
 const Chat = () => {
   return (
@@ -9,9 +9,9 @@ const Chat = () => {
         Ask Agnes
       </h1>
       <p className="text-agrifirm-grey mb-6">
-        Powered by OpenAI, Agnes can help answer your farming questions.
+        Powered by AI, Agnes can help answer your farming questions using your farm's data.
       </p>
-      <ChatInterface />
+      <AgentChatInterface />
     </div>
   );
 };
