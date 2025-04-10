@@ -6,10 +6,12 @@ import FieldStatus from "@/components/dashboard/FieldStatus";
 import AgentChatInterface from "@/components/chat/AgentChatInterface";
 import PlanningCalendar from "@/components/planning/Calendar";
 import NotificationList from "@/components/notifications/NotificationList";
+import AdvisorSupportRequest from "@/components/advisor/AdvisorSupportRequest";
+import AdvisorInfo from "@/components/advisor/AdvisorInfo";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNotifications } from "@/context/NotificationContext";
 import { useEvents } from "@/context/EventContext";
-import { Bell } from "lucide-react";
+import { Bell, UserRound } from "lucide-react";
 
 const Dashboard = () => {
   const { notifications } = useNotifications();
@@ -28,6 +30,10 @@ const Dashboard = () => {
             <TabsList className="mb-4 bg-agrifirm-light-yellow-2/50">
               <TabsTrigger value="tasks">Tasks</TabsTrigger>
               <TabsTrigger value="planning">Planning</TabsTrigger>
+              <TabsTrigger value="advisor">
+                <UserRound className="h-4 w-4 mr-2" />
+                Request Advisor Support
+              </TabsTrigger>
               <TabsTrigger value="notifications" className="relative">
                 Notifications
                 {unreadCount > 0 && (
@@ -42,6 +48,12 @@ const Dashboard = () => {
             </TabsContent>
             <TabsContent value="planning" className="mt-0">
               <PlanningCalendar events={events} />
+            </TabsContent>
+            <TabsContent value="advisor" className="mt-0">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <AdvisorSupportRequest />
+                <AdvisorInfo />
+              </div>
             </TabsContent>
             <TabsContent value="notifications" className="mt-0">
               <NotificationList />
