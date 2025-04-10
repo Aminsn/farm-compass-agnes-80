@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Check, Clock, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,33 +11,40 @@ type Task = {
   date: string;
 };
 
-// Sample tasks data
+// Sample tasks data - Advisor-specific tasks
 const sampleTasks: Task[] = [
   {
     id: "1",
-    title: "Check Corn Field Irrigation",
-    description: "Ensure irrigation system is working properly in the north corn field",
-    status: "pending",
-    date: "2025-04-09"
+    title: "Review Soil Test Results",
+    description: "Analyze soil test results for the Johnson farm and prepare recommendations",
+    status: "urgent",
+    date: "2025-04-10"
   },
   {
     id: "2",
-    title: "Apply Fertilizer to Wheat Field",
-    description: "Use the nitrogen-rich fertilizer on the eastern wheat field",
-    status: "urgent",
-    date: "2025-04-09"
+    title: "Create Crop Rotation Plan",
+    description: "Develop a 3-year crop rotation plan for Williams farm",
+    status: "pending",
+    date: "2025-04-10"
   },
   {
     id: "3",
-    title: "Repair Tractor",
-    description: "Schedule maintenance for the John Deere tractor",
+    title: "Submit Quarterly Reports",
+    description: "Complete and submit quarterly performance reports for all client farms",
     status: "completed",
-    date: "2025-04-08"
+    date: "2025-04-09"
   },
   {
     id: "4",
-    title: "Order New Seeds",
-    description: "Place order for next season's soybean seeds",
+    title: "Prepare Fertilizer Recommendations",
+    description: "Create custom fertilizer application plans for spring planting",
+    status: "pending",
+    date: "2025-04-11"
+  },
+  {
+    id: "5",
+    title: "Schedule Client Follow-ups",
+    description: "Contact clients with upcoming planting seasons to schedule consultations",
     status: "pending",
     date: "2025-04-10"
   }
