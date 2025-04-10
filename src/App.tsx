@@ -8,9 +8,11 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import { EventProvider } from "./context/EventContext";
 import { TaskProvider } from "./context/TaskContext";
+import { NotificationProvider } from "./context/NotificationContext";
 import Chat from "./pages/Chat";
 import Planning from "./pages/Planning";
 import Dashboard from "./pages/Dashboard";
+import Notifications from "./pages/Notifications";
 
 const queryClient = new QueryClient();
 
@@ -19,17 +21,20 @@ const App = () => (
     <TooltipProvider>
       <EventProvider>
         <TaskProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/chat" element={<Chat />} />
-              <Route path="/planning" element={<Planning />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
+          <NotificationProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/chat" element={<Chat />} />
+                <Route path="/planning" element={<Planning />} />
+                <Route path="/notifications" element={<Notifications />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </NotificationProvider>
         </TaskProvider>
       </EventProvider>
     </TooltipProvider>
