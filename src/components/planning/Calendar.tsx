@@ -213,9 +213,10 @@ const PlanningCalendar: React.FC<CalendarProps> = ({ events = [] }) => {
         </div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {/* Calendar - wider (3 cols) */}
-        <div className="md:col-span-3 space-y-4">
+      {/* Changed grid layout to give more space to the events sidebar */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Calendar - narrower (2 cols instead of 3) */}
+        <div className="md:col-span-2 space-y-4">
           <div className="bg-white rounded-lg shadow-sm border border-agrifirm-light-green/20 overflow-hidden">
             <div className="bg-agrifirm-light-yellow-2/30 px-4 py-3 border-b border-agrifirm-light-green/10">
               <h3 className="font-medium flex items-center text-agrifirm-black">
@@ -235,7 +236,7 @@ const PlanningCalendar: React.FC<CalendarProps> = ({ events = [] }) => {
           </div>
         </div>
         
-        {/* Events list - slimmer (1 col) */}
+        {/* Events list - wider (1 col instead of being squeezed) */}
         <div className="md:col-span-1">
           <div className="bg-white rounded-lg shadow-sm border border-agrifirm-light-green/20 overflow-hidden h-full">
             <div className="bg-agrifirm-light-yellow-2/30 px-4 py-3 border-b border-agrifirm-light-green/10">
