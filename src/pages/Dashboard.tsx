@@ -28,14 +28,14 @@ const Dashboard = () => {
         <div className="lg:col-span-2 space-y-6">
           <Tabs defaultValue="tasks" className="w-full">
             <TabsList className="mb-4 bg-agrifirm-light-yellow-2/50">
-              <TabsTrigger value="tasks">Tasks</TabsTrigger>
-              <TabsTrigger value="planning">Planning</TabsTrigger>
+              <TabsTrigger value="tasks">My Tasks</TabsTrigger>
+              <TabsTrigger value="planning">My Schedule</TabsTrigger>
               <TabsTrigger value="advisor">
                 <UserRound className="h-4 w-4 mr-2" />
                 Request Advisor Support
               </TabsTrigger>
               <TabsTrigger value="notifications" className="relative">
-                Notifications
+                My Alerts
                 {unreadCount > 0 && (
                   <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-agrifirm-green text-[10px] font-medium text-white">
                     {unreadCount}
