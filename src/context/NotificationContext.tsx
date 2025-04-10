@@ -34,38 +34,46 @@ export const useNotifications = () => {
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
-  // Mock data for demonstration
+  // Mock data with advisor-specific notifications
   useEffect(() => {
     const mockNotifications: Omit<Notification, "id" | "read">[] = [
       {
         type: "advisor",
-        title: "Message from your Agrifirm advisor",
-        message: "Hi there! I've looked at your recent crop data and wanted to schedule a visit next week to discuss your winter wheat plans. Are you available on Tuesday afternoon?",
-        date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
+        title: "Client Support Request",
+        message: "John Smith from Green Valley Farm has requested assistance with a potential pest issue in his corn fields. Please schedule a visit within the next 48 hours.",
+        date: new Date(Date.now() - 3 * 60 * 60 * 1000), // 3 hours ago
         actionRequired: true,
-        actionText: "Reply",
+        actionText: "Schedule Visit",
       },
       {
         type: "order",
-        title: "Fertilizer restock recommended",
-        message: "I've noticed your nitrogen fertilizer is running low (15% remaining). I recommend ordering 500kg of AgriNitro Plus to be delivered by next Friday. This should cover your needs for the next planting cycle.",
+        title: "Test Results Available",
+        message: "Soil sample test results for Williams farm are now available. Results indicate low potassium levels. Review and prepare recommendations.",
         date: new Date(Date.now() - 12 * 60 * 60 * 1000), // 12 hours ago
         actionRequired: true,
-        actionText: "Approve Order",
+        actionText: "Review Results",
       },
       {
         type: "recommendation",
-        title: "Soil analysis completed",
-        message: "Your recent soil samples indicate low nitrogen levels in fields 3 and 4. I recommend applying AgriBoost N+ fertilizer within the next 10 days for optimal results. Would you like me to create a treatment plan?",
-        date: new Date(Date.now() - 36 * 60 * 60 * 1000), // 36 hours ago
+        title: "Recommendation Review Required",
+        message: "Your crop rotation recommendation for Blue Ridge Farm requires approval from the regional manager before sending to the client. Please review and submit for approval.",
+        date: new Date(Date.now() - 24 * 60 * 60 * 1000), // 24 hours ago
         actionRequired: true,
-        actionText: "Create Plan",
+        actionText: "Submit for Approval",
       },
       {
         type: "advisor",
-        title: "Weather alert from advisor",
-        message: "A period of heavy rain is expected next week. Consider adjusting your irrigation schedule for fields 1 and 2 to prevent oversaturation. I've attached a revised schedule for your review.",
+        title: "Weather Alert for Client Regions",
+        message: "Severe weather warning issued for Iowa region affecting 3 of your client farms. Consider sending preventative measures and recommendations.",
         date: new Date(Date.now() - 8 * 60 * 60 * 1000), // 8 hours ago
+        actionRequired: true,
+        actionText: "Send Recommendations",
+      },
+      {
+        type: "recommendation",
+        title: "New Research Available",
+        message: "New research on sustainable fertilizer application methods is now available in the knowledge base. This may be relevant for several of your client farms.",
+        date: new Date(Date.now() - 36 * 60 * 60 * 1000), // 36 hours ago
         actionRequired: false,
       },
     ];
