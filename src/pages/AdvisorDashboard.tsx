@@ -101,6 +101,20 @@ const AdvisorDashboard = () => {
     farmer.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
     farmer.farm.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Filter for advisor-specific notifications
+  const advisorNotifications = notifications.filter(n => 
+    n.type === "support_request" || n.type === "farm_alert" || n.type === "system"
+  );
+  
+  // Custom advisor tasks data
+  const advisorTasks = [
+    { id: "1", title: "Review soil test results for Green Valley Farm", status: "pending" },
+    { id: "2", title: "Prepare pest management recommendations", status: "in-progress" },
+    { id: "3", title: "Schedule quarterly farmer meeting", status: "pending" },
+    { id: "4", title: "Complete crop yield forecast report", status: "pending" },
+    { id: "5", title: "Update sustainability recommendations", status: "completed" },
+  ];
   
   return (
     <>
@@ -137,20 +151,20 @@ const AdvisorDashboard = () => {
           <Tabs value={advisorView} onValueChange={setAdvisorView}>
             <TabsContent value="personal" className="mt-0">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-3 space-y-6">
+                <div className="lg:col-span-2 space-y-6">
                   <Tabs value={personalTab} onValueChange={setPersonalTab} className="w-full">
                     <TabsList className="mb-4 bg-agrifirm-light-yellow-2/50">
                       <TabsTrigger value="tasks">
                         <ListTodo className="h-4 w-4 mr-2" />
-                        My Tasks
+                        Advisor Tasks
                       </TabsTrigger>
                       <TabsTrigger value="planning">
                         <CalendarDays className="h-4 w-4 mr-2" />
-                        My Schedule
+                        Advisor Schedule
                       </TabsTrigger>
                       <TabsTrigger value="notifications" className="relative">
                         <Bell className="h-4 w-4 mr-2" />
-                        Notifications
+                        Advisor Alerts
                         {unreadCount > 0 && (
                           <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-agrifirm-green text-[10px] font-medium text-white">
                             {unreadCount}
@@ -159,15 +173,68 @@ const AdvisorDashboard = () => {
                       </TabsTrigger>
                     </TabsList>
                     <TabsContent value="tasks" className="mt-0">
-                      <EditableTaskList />
+                      <Card className="border-agrifirm-light-green/40 shadow-sm">
+                        <CardHeader className="bg-gradient-to-r from-agrifirm-light-green/10 to-agrifirm-light-yellow-2/10 pb-2">
+                          <CardTitle className="text-lg text-agrifirm-black">My Advisor Tasks</CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-4">
+                          <div className="space-y-4">
+                            {advisorTasks.map((task) => (
+                              <div key={task.id} className="flex items-center justify-between p-3 border border-agrifirm-light-green/30 rounded-md">
+                                <div className="flex items-center">
+                                  <div className={`h-3 w-3 rounded-full mr-3 ${
+                                    task.status === 'completed' ? 'bg-green-500' : 
+                                    task.status === 'in-progress' ? 'bg-yellow-500' : 'bg-blue-500'
+                                  }`}></div>
+                                  <span>{task.title}</span>
+                                </div>
+                                <span className="text-sm px-2 py-1 rounded-full bg-agrifirm-light-yellow-2/50">
+                                  {task.status === 'completed' ? 'Completed' : 
+                                   task.status === 'in-progress' ? 'In Progress' : 'Pending'}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
                     </TabsContent>
                     <TabsContent value="planning" className="mt-0">
-                      <PlanningCalendar events={events} />
+                      <Card className="border-agrifirm-light-green/40 shadow-sm">
+                        <CardHeader className="bg-gradient-to-r from-agrifirm-light-green/10 to-agrifirm-light-yellow-2/10 pb-2">
+                          <CardTitle className="text-lg text-agrifirm-black">Advisor Calendar</CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-4">
+                          <PlanningCalendar events={events} />
+                        </CardContent>
+                      </Card>
                     </TabsContent>
                     <TabsContent value="notifications" className="mt-0">
-                      <NotificationList />
+                      <Card className="border-agrifirm-light-green/40 shadow-sm">
+                        <CardHeader className="bg-gradient-to-r from-agrifirm-light-green/10 to-agrifirm-light-yellow-2/10 pb-2">
+                          <CardTitle className="text-lg text-agrifirm-black">Advisor Notifications</CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-4">
+                          <div className="space-y-4">
+                            {advisorNotifications.length > 0 ? (
+                              <NotificationList />
+                            ) : (
+                              <p className="text-agrifirm-grey text-center py-4">No new notifications</p>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
                     </TabsContent>
                   </Tabs>
+                </div>
+                <div className="lg:col-span-1">
+                  <Card className="border-agrifirm-light-green/40 shadow-sm h-full">
+                    <CardHeader className="bg-gradient-to-r from-agrifirm-light-green/10 to-agrifirm-light-yellow-2/10 pb-2">
+                      <CardTitle className="text-lg text-agrifirm-black">Ask Agnes</CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-4">
+                      <AgentChatInterface />
+                    </CardContent>
+                  </Card>
                 </div>
               </div>
             </TabsContent>
