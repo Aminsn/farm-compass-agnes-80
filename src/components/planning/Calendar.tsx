@@ -116,14 +116,20 @@ const PlanningCalendar: React.FC<CalendarProps> = ({ events = [] }) => {
   // Helper function to get appropriate badge color based on event type
   const getEventTypeColor = (type: string) => {
     switch (type.toLowerCase()) {
-      case 'planting':
-        return 'bg-agrifirm-light-green text-agrifirm-black';
-      case 'harvesting':
-        return 'bg-agrifirm-yellow text-agrifirm-black';
-      case 'inspection':
-        return 'bg-agrifirm-light-yellow text-agrifirm-black';
-      case 'maintenance':
-        return 'bg-agrifirm-grey/80 text-white';
+      case 'visit':
+        return 'bg-green-100 text-green-800';
+      case 'meeting':
+        return 'bg-blue-100 text-blue-800';
+      case 'conference':
+        return 'bg-purple-100 text-purple-800';
+      case 'review':
+        return 'bg-orange-100 text-orange-800';
+      case 'training':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'demonstration':
+        return 'bg-indigo-100 text-indigo-800';
+      case 'reporting':
+        return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-200 text-gray-800';
     }
@@ -158,10 +164,13 @@ const PlanningCalendar: React.FC<CalendarProps> = ({ events = [] }) => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="planting">Planting</SelectItem>
-                <SelectItem value="harvesting">Harvesting</SelectItem>
-                <SelectItem value="inspection">Inspection</SelectItem>
-                <SelectItem value="maintenance">Maintenance</SelectItem>
+                <SelectItem value="visit">Farm Visit</SelectItem>
+                <SelectItem value="meeting">Meeting</SelectItem>
+                <SelectItem value="conference">Conference</SelectItem>
+                <SelectItem value="review">Client Review</SelectItem>
+                <SelectItem value="training">Training</SelectItem>
+                <SelectItem value="demonstration">Demonstration</SelectItem>
+                <SelectItem value="reporting">Reporting</SelectItem>
               </SelectContent>
             </Select>
           </div>

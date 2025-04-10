@@ -50,6 +50,38 @@ const sampleEvents: Event[] = [
     description: "Host workshop for local farmers",
     type: "training",
     status: "pending"
+  },
+  {
+    id: "6",
+    date: new Date(2025, 3, 22), // April 22, 2025
+    title: "Team Coordination Meeting",
+    description: "Weekly team sync to discuss client issues and priorities",
+    type: "meeting",
+    status: "pending"
+  },
+  {
+    id: "7",
+    date: new Date(2025, 3, 25), // April 25, 2025
+    title: "Equipment Demonstration - Smith Farm",
+    description: "Demonstrate new precision agriculture equipment",
+    type: "demonstration",
+    status: "pending"
+  },
+  {
+    id: "8",
+    date: new Date(2025, 3, 28), // April 28, 2025
+    title: "Research Analysis Meeting",
+    description: "Review latest agricultural research findings with research team",
+    type: "meeting",
+    status: "pending"
+  },
+  {
+    id: "9",
+    date: new Date(2025, 3, 30), // April 30, 2025
+    title: "End-of-Month Reporting",
+    description: "Prepare monthly performance reports for all client farms",
+    type: "reporting",
+    status: "pending"
   }
 ];
 
