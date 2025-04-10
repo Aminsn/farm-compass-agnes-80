@@ -1,58 +1,54 @@
 
 import React, { createContext, useContext, useState, ReactNode } from "react";
+import { Event } from "@/types";
 
-// Define event type (same as in Calendar.tsx)
-export type CalendarEvent = {
-  id: string;
-  date: Date;
-  title: string;
-  description?: string;
-  type: "planting" | "irrigation" | "fertilizing" | "harvesting" | "maintenance" | "other";
-};
+interface EventContextProps {
+  events: Event[];
+  addEvent: (event: Omit<Event, "id">) => string;
+  deleteEvent: (id: string) => void;
+  updateEvent: (id: string, updates: Partial<Event>) => void;
+}
 
-// Sample calendar event data from Calendar.tsx
-const sampleEvents: CalendarEvent[] = [
+// Sample calendar event data
+const sampleEvents: Event[] = [
   {
     id: "1",
     date: new Date(2025, 3, 10), // April 10, 2025
     title: "Plant Corn",
     description: "North and East fields",
-    type: "planting"
+    type: "planting",
+    status: "pending"
   },
   {
     id: "2",
     date: new Date(2025, 3, 12), // April 12, 2025
     title: "Tractor Maintenance",
-    type: "maintenance"
+    type: "maintenance",
+    status: "in progress"
   },
   {
     id: "3",
     date: new Date(2025, 3, 15), // April 15, 2025
     title: "Irrigation - South Field",
-    type: "irrigation"
+    type: "irrigation",
+    status: "pending"
   },
   {
     id: "4",
     date: new Date(2025, 3, 18), // April 18, 2025
     title: "Apply Fertilizer",
     description: "All fields",
-    type: "fertilizing"
+    type: "fertilizing",
+    status: "completed"
   }
 ];
 
-interface EventContextType {
-  events: CalendarEvent[];
-  addEvent: (event: Omit<CalendarEvent, "id">) => string;
-  deleteEvent: (id: string) => void;
-  updateEvent: (event: CalendarEvent) => void;
-}
-
-const EventContext = createContext<EventContextType | undefined>(undefined);
+const EventContext = createContext<EventContextProps | undefined>(undefined);
 
 export const EventProvider = ({ children }: { children: ReactNode }) => {
-  const [events, setEvents] = useState<CalendarEvent[]>(sampleEvents);
+  const [events, setEvents] = useState<Event[]>(sampleEvents);
 
-  const addEvent = (eventData: Omit<CalendarEvent, "id">) => {
+  const addEvent = (eventData: Omit<Event, "id">) => {
     const id = Date.now().toString();
     const newEvent = { ...eventData, id };
     setEvents(prev => [...prev, newEvent]);
@@ -63,9 +59,9 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
     setEvents(prev => prev.filter(event => event.id !== id));
   };
 
-  const updateEvent = (updatedEvent: CalendarEvent) => {
+  const updateEvent = (id: string, updates: Partial<Event>) => {
     setEvents(prev => 
-      prev.map(event => event.id === updatedEvent.id ? updatedEvent : event)
+      prev.map(event => event.id === id ? { ...event, ...updates } : event)
     );
   };
 

@@ -1,18 +1,19 @@
+
 import React, { useState, useEffect } from 'react';
 import { Calendar as ReactCalendar } from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import { format } from 'date-fns';
 import { Event } from '@/types';
-import { useEvent } from '@/context/EventContext';
+import { useEvents } from '@/context/EventContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
 interface CalendarProps {
-  events: Event[];
+  events?: Event[];
 }
 
-const PlanningCalendar: React.FC<CalendarProps> = ({ events }) => {
+const PlanningCalendar: React.FC<CalendarProps> = ({ events = [] }) => {
   const [date, setDate] = useState<Date>(new Date());
   const [eventsByDate, setEventsByDate] = useState<{ [key: string]: Event[] }>({});
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
@@ -20,7 +21,7 @@ const PlanningCalendar: React.FC<CalendarProps> = ({ events }) => {
   const [selectedEventType, setSelectedEventType] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
   const [isFilterActive, setIsFilterActive] = useState(false);
-  const { updateEvent } = useEvent();
+  const { updateEvent } = useEvents();
 
   useEffect(() => {
     const groupedEvents: { [key: string]: Event[] } = events.reduce((acc: { [key: string]: Event[] }, event) => {
@@ -78,15 +79,12 @@ const PlanningCalendar: React.FC<CalendarProps> = ({ events }) => {
   const applyFilters = () => {
     if (selectedDate) {
       setFilteredEvents(eventsByDate[format(selectedDate, 'yyyy-MM-dd')] || []);
-      // Fix the type error by explicitly passing a boolean
       setIsFilterActive(true);
     } else if (selectedEventType) {
       setFilteredEvents(events.filter(event => event.type === selectedEventType));
-      // Fix the type error by explicitly passing a boolean
       setIsFilterActive(true);
     } else if (selectedStatus) {
       setFilteredEvents(events.filter(event => event.status === selectedStatus));
-      // Fix the type error by explicitly passing a boolean
       setIsFilterActive(true);
     }
   };
@@ -125,8 +123,8 @@ const PlanningCalendar: React.FC<CalendarProps> = ({ events }) => {
               <SelectItem value="maintenance">Maintenance</SelectItem>
             </SelectContent>
           </Select>
-          <Select className="mt-2" onValueChange={handleStatusChange}>
-            <SelectTrigger className="w-full">
+          <Select onValueChange={handleStatusChange}>
+            <SelectTrigger className="w-full mt-2">
               <SelectValue placeholder="Select Status" />
             </SelectTrigger>
             <SelectContent>

@@ -8,10 +8,12 @@ import PlanningCalendar from "@/components/planning/Calendar";
 import NotificationList from "@/components/notifications/NotificationList";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNotifications } from "@/context/NotificationContext";
+import { useEvents } from "@/context/EventContext";
 import { Bell } from "lucide-react";
 
 const Dashboard = () => {
   const { notifications } = useNotifications();
+  const { events } = useEvents();
   const unreadCount = notifications.filter(n => !n.read).length;
   
   return (
@@ -39,7 +41,7 @@ const Dashboard = () => {
               <EditableTaskList />
             </TabsContent>
             <TabsContent value="planning" className="mt-0">
-              <PlanningCalendar />
+              <PlanningCalendar events={events} />
             </TabsContent>
             <TabsContent value="notifications" className="mt-0">
               <NotificationList />
