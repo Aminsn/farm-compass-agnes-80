@@ -9,7 +9,7 @@ import PlanningCalendar from "@/components/planning/Calendar";
 import NotificationList from "@/components/notifications/NotificationList";
 import EditableTaskList from "@/components/dashboard/EditableTaskList";
 import AgentChatInterface from "@/components/chat/AgentChatInterface";
-import { Bell, CalendarDays, ListTodo, UserRound, Users } from "lucide-react";
+import { Bell, CalendarDays, FileText, LayoutGrid, ListTodo, UserRound, Users } from "lucide-react";
 import { 
   Select,
   SelectContent,
@@ -18,6 +18,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 
 // Mock farmer data
 const farmers = [
@@ -46,6 +48,7 @@ const AdvisorDashboard = () => {
   const [advisorView, setAdvisorView] = useState("personal");
   const [personalTab, setPersonalTab] = useState("tasks");
   const [customerTab, setCustomerTab] = useState("tasks");
+  const [overviewMode, setOverviewMode] = useState("individual");
   
   const selectedFarmer = farmers.find(farmer => farmer.id === selectedFarmerId) || farmers[0];
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -121,50 +124,113 @@ const AdvisorDashboard = () => {
             </TabsContent>
             
             <TabsContent value="customers" className="mt-0">
-              <div className="w-full mb-6">
-                <Select value={selectedFarmerId} onValueChange={setSelectedFarmerId}>
-                  <SelectTrigger className="bg-white border-agrifirm-light-green w-full sm:w-72">
-                    <SelectValue placeholder="Select a farmer" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {farmers.map((farmer) => (
-                      <SelectItem key={farmer.id} value={farmer.id}>
-                        {farmer.name} - {farmer.farm}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="mb-6">
+                <RadioGroup
+                  value={overviewMode}
+                  onValueChange={setOverviewMode}
+                  className="flex flex-row space-x-4 mb-4"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="individual" id="individual" />
+                    <Label htmlFor="individual" className="flex items-center space-x-1 cursor-pointer">
+                      <FileText className="h-4 w-4" />
+                      <span>Farm Overview</span>
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="overall" id="overall" />
+                    <Label htmlFor="overall" className="flex items-center space-x-1 cursor-pointer">
+                      <LayoutGrid className="h-4 w-4" />
+                      <span>Overall Overview</span>
+                    </Label>
+                  </div>
+                </RadioGroup>
               </div>
               
-              <Card className="mb-6 border-agrifirm-light-green/40 shadow-sm">
-                <CardHeader className="bg-gradient-to-r from-agrifirm-light-green/10 to-agrifirm-light-yellow-2/10 pb-2">
-                  <CardTitle className="text-lg text-agrifirm-black">Farmer Information</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div>
-                      <h3 className="text-sm font-medium text-agrifirm-grey">Farmer</h3>
-                      <p className="text-agrifirm-black font-semibold">{selectedFarmer.name}</p>
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-medium text-agrifirm-grey">Farm Name</h3>
-                      <p className="text-agrifirm-black font-semibold">{selectedFarmer.farm}</p>
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-medium text-agrifirm-grey">Location</h3>
-                      <p className="text-agrifirm-black font-semibold">{selectedFarmer.location}</p>
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-medium text-agrifirm-grey">Farm Size</h3>
-                      <p className="text-agrifirm-black font-semibold">{selectedFarmer.size}</p>
-                    </div>
-                    <div className="md:col-span-2">
-                      <h3 className="text-sm font-medium text-agrifirm-grey">Crops</h3>
-                      <p className="text-agrifirm-black font-semibold">{selectedFarmer.crops.join(", ")}</p>
-                    </div>
+              {overviewMode === "individual" ? (
+                <>
+                  <div className="w-full mb-6">
+                    <Select value={selectedFarmerId} onValueChange={setSelectedFarmerId}>
+                      <SelectTrigger className="bg-white border-agrifirm-light-green w-full sm:w-72">
+                        <SelectValue placeholder="Select a farmer" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {farmers.map((farmer) => (
+                          <SelectItem key={farmer.id} value={farmer.id}>
+                            {farmer.name} - {farmer.farm}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                </CardContent>
-              </Card>
+                  
+                  <Card className="mb-6 border-agrifirm-light-green/40 shadow-sm">
+                    <CardHeader className="bg-gradient-to-r from-agrifirm-light-green/10 to-agrifirm-light-yellow-2/10 pb-2">
+                      <CardTitle className="text-lg text-agrifirm-black">Farmer Information</CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div>
+                          <h3 className="text-sm font-medium text-agrifirm-grey">Farmer</h3>
+                          <p className="text-agrifirm-black font-semibold">{selectedFarmer.name}</p>
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-medium text-agrifirm-grey">Farm Name</h3>
+                          <p className="text-agrifirm-black font-semibold">{selectedFarmer.farm}</p>
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-medium text-agrifirm-grey">Location</h3>
+                          <p className="text-agrifirm-black font-semibold">{selectedFarmer.location}</p>
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-medium text-agrifirm-grey">Farm Size</h3>
+                          <p className="text-agrifirm-black font-semibold">{selectedFarmer.size}</p>
+                        </div>
+                        <div className="md:col-span-2">
+                          <h3 className="text-sm font-medium text-agrifirm-grey">Crops</h3>
+                          <p className="text-agrifirm-black font-semibold">{selectedFarmer.crops.join(", ")}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </>
+              ) : (
+                <Card className="mb-6 border-agrifirm-light-green/40 shadow-sm">
+                  <CardHeader className="bg-gradient-to-r from-agrifirm-light-green/10 to-agrifirm-light-yellow-2/10 pb-2">
+                    <CardTitle className="text-lg text-agrifirm-black">All Farmers Overview</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    <div className="grid gap-4">
+                      {farmers.map((farmer) => (
+                        <div key={farmer.id} className="p-4 border rounded-md grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div>
+                            <h3 className="font-medium">{farmer.name}</h3>
+                            <p className="text-agrifirm-grey">{farmer.farm}</p>
+                            <p className="text-agrifirm-grey text-sm">{farmer.location}</p>
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-medium text-agrifirm-grey">Farm Size</h4>
+                            <p>{farmer.size}</p>
+                            <h4 className="text-sm font-medium text-agrifirm-grey mt-2">Crops</h4>
+                            <p>{farmer.crops.join(", ")}</p>
+                          </div>
+                          <div className="flex items-center justify-end">
+                            <button 
+                              onClick={() => {
+                                setSelectedFarmerId(farmer.id);
+                                setOverviewMode("individual");
+                              }}
+                              className="bg-agrifirm-light-green/20 hover:bg-agrifirm-light-green/30 text-agrifirm-green px-3 py-1.5 rounded text-sm font-medium transition-colors"
+                            >
+                              View Details
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
               
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-3 space-y-6">
