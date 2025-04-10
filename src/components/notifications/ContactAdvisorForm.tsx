@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -85,24 +84,20 @@ const ContactAdvisorForm = () => {
     
     // Add confirmation notification
     addNotification({
-      id: Date.now().toString(),
       title: "Message Sent to Advisor",
       message: `Your message "${values.subject}" has been sent to your advisor. They will respond shortly.`,
       type: "advisor",
       date: new Date(),
-      read: false,
       actionRequired: false,
     });
     
     // Simulate receiving a response from advisor (would normally come from backend)
     setTimeout(() => {
       addNotification({
-        id: (Date.now() + 1).toString(),
         title: "Response from Advisor",
         message: `Thank you for your message about "${values.subject}". I've reviewed your crop image and will visit your farm next week to assess the situation in person.`,
         type: "advisor",
         date: responseTime,
-        read: false,
         actionRequired: true,
         actionText: "Schedule Visit",
       });
