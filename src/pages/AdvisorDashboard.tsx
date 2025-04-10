@@ -9,7 +9,7 @@ import PlanningCalendar from "@/components/planning/Calendar";
 import NotificationList from "@/components/notifications/NotificationList";
 import EditableTaskList from "@/components/dashboard/EditableTaskList";
 import AgentChatInterface from "@/components/chat/AgentChatInterface";
-import { Bell, CalendarDays, ListTodo, UserRound } from "lucide-react";
+import { Bell, CalendarDays, ListTodo, UserRound, Users } from "lucide-react";
 import { 
   Select,
   SelectContent,
@@ -43,6 +43,7 @@ const AdvisorDashboard = () => {
   const { events } = useEvents();
   const { notifications } = useNotifications();
   const [selectedFarmerId, setSelectedFarmerId] = useState(farmers[0].id);
+  const [advisorView, setAdvisorView] = useState("personal");
   
   const selectedFarmer = farmers.find(farmer => farmer.id === selectedFarmerId) || farmers[0];
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -61,9 +62,65 @@ const AdvisorDashboard = () => {
               Advisor Dashboard
             </h1>
             
-            <div className="w-full sm:w-72">
+            <Tabs 
+              value={advisorView} 
+              onValueChange={setAdvisorView}
+              className="w-full sm:w-auto"
+            >
+              <TabsList className="w-full sm:w-auto bg-agrifirm-light-yellow-2/50">
+                <TabsTrigger value="personal" className="flex items-center">
+                  <UserRound className="h-4 w-4 mr-2" />
+                  Personal
+                </TabsTrigger>
+                <TabsTrigger value="customers" className="flex items-center">
+                  <Users className="h-4 w-4 mr-2" />
+                  Customers
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+          
+          <TabsContent value="personal" className="mt-0">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-3 space-y-6">
+                <Tabs defaultValue="tasks" className="w-full">
+                  <TabsList className="mb-4 bg-agrifirm-light-yellow-2/50">
+                    <TabsTrigger value="tasks">
+                      <ListTodo className="h-4 w-4 mr-2" />
+                      My Tasks
+                    </TabsTrigger>
+                    <TabsTrigger value="planning">
+                      <CalendarDays className="h-4 w-4 mr-2" />
+                      My Schedule
+                    </TabsTrigger>
+                    <TabsTrigger value="notifications" className="relative">
+                      <Bell className="h-4 w-4 mr-2" />
+                      Notifications
+                      {unreadCount > 0 && (
+                        <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-agrifirm-green text-[10px] font-medium text-white">
+                          {unreadCount}
+                        </span>
+                      )}
+                    </TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="tasks" className="mt-0">
+                    <EditableTaskList />
+                  </TabsContent>
+                  <TabsContent value="planning" className="mt-0">
+                    <PlanningCalendar events={events} />
+                  </TabsContent>
+                  <TabsContent value="notifications" className="mt-0">
+                    <NotificationList />
+                  </TabsContent>
+                </Tabs>
+              </div>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="customers" className="mt-0">
+            <div className="w-full mb-6">
               <Select value={selectedFarmerId} onValueChange={setSelectedFarmerId}>
-                <SelectTrigger className="bg-white border-agrifirm-light-green">
+                <SelectTrigger className="bg-white border-agrifirm-light-green w-full sm:w-72">
                   <SelectValue placeholder="Select a farmer" />
                 </SelectTrigger>
                 <SelectContent>
@@ -75,81 +132,76 @@ const AdvisorDashboard = () => {
                 </SelectContent>
               </Select>
             </div>
-          </div>
-          
-          <Card className="mb-6 border-agrifirm-light-green/40 shadow-sm">
-            <CardHeader className="bg-gradient-to-r from-agrifirm-light-green/10 to-agrifirm-light-yellow-2/10 pb-2">
-              <CardTitle className="text-lg text-agrifirm-black">Farmer Information</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div>
-                  <h3 className="text-sm font-medium text-agrifirm-grey">Farmer</h3>
-                  <p className="text-agrifirm-black font-semibold">{selectedFarmer.name}</p>
+            
+            <Card className="mb-6 border-agrifirm-light-green/40 shadow-sm">
+              <CardHeader className="bg-gradient-to-r from-agrifirm-light-green/10 to-agrifirm-light-yellow-2/10 pb-2">
+                <CardTitle className="text-lg text-agrifirm-black">Farmer Information</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div>
+                    <h3 className="text-sm font-medium text-agrifirm-grey">Farmer</h3>
+                    <p className="text-agrifirm-black font-semibold">{selectedFarmer.name}</p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-agrifirm-grey">Farm Name</h3>
+                    <p className="text-agrifirm-black font-semibold">{selectedFarmer.farm}</p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-agrifirm-grey">Location</h3>
+                    <p className="text-agrifirm-black font-semibold">{selectedFarmer.location}</p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-agrifirm-grey">Farm Size</h3>
+                    <p className="text-agrifirm-black font-semibold">{selectedFarmer.size}</p>
+                  </div>
+                  <div className="md:col-span-2">
+                    <h3 className="text-sm font-medium text-agrifirm-grey">Crops</h3>
+                    <p className="text-agrifirm-black font-semibold">{selectedFarmer.crops.join(", ")}</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-sm font-medium text-agrifirm-grey">Farm Name</h3>
-                  <p className="text-agrifirm-black font-semibold">{selectedFarmer.farm}</p>
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium text-agrifirm-grey">Location</h3>
-                  <p className="text-agrifirm-black font-semibold">{selectedFarmer.location}</p>
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium text-agrifirm-grey">Farm Size</h3>
-                  <p className="text-agrifirm-black font-semibold">{selectedFarmer.size}</p>
-                </div>
-                <div className="md:col-span-2">
-                  <h3 className="text-sm font-medium text-agrifirm-grey">Crops</h3>
-                  <p className="text-agrifirm-black font-semibold">{selectedFarmer.crops.join(", ")}</p>
-                </div>
+              </CardContent>
+            </Card>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-3 space-y-6">
+                <Tabs defaultValue="tasks" className="w-full">
+                  <TabsList className="mb-4 bg-agrifirm-light-yellow-2/50">
+                    <TabsTrigger value="tasks">
+                      <ListTodo className="h-4 w-4 mr-2" />
+                      Customer Tasks
+                    </TabsTrigger>
+                    <TabsTrigger value="planning">
+                      <CalendarDays className="h-4 w-4 mr-2" />
+                      Customer Planning
+                    </TabsTrigger>
+                    <TabsTrigger value="notifications" className="relative">
+                      <Bell className="h-4 w-4 mr-2" />
+                      Customer Alerts
+                    </TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="tasks" className="mt-0">
+                    <EditableTaskList />
+                  </TabsContent>
+                  <TabsContent value="planning" className="mt-0">
+                    <PlanningCalendar events={events} />
+                  </TabsContent>
+                  <TabsContent value="notifications" className="mt-0">
+                    <NotificationList />
+                  </TabsContent>
+                </Tabs>
+                
+                <Card className="border-agrifirm-light-green/40 shadow-sm">
+                  <CardHeader className="bg-gradient-to-r from-agrifirm-light-green/10 to-agrifirm-light-yellow-2/10 pb-2">
+                    <CardTitle className="text-lg text-agrifirm-black">Ask Agnes</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    <AgentChatInterface />
+                  </CardContent>
+                </Card>
               </div>
-            </CardContent>
-          </Card>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-3 space-y-6">
-              <Tabs defaultValue="tasks" className="w-full">
-                <TabsList className="mb-4 bg-agrifirm-light-yellow-2/50">
-                  <TabsTrigger value="tasks">
-                    <ListTodo className="h-4 w-4 mr-2" />
-                    Tasks
-                  </TabsTrigger>
-                  <TabsTrigger value="planning">
-                    <CalendarDays className="h-4 w-4 mr-2" />
-                    Planning
-                  </TabsTrigger>
-                  <TabsTrigger value="notifications" className="relative">
-                    <Bell className="h-4 w-4 mr-2" />
-                    Notifications
-                    {unreadCount > 0 && (
-                      <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-agrifirm-green text-[10px] font-medium text-white">
-                        {unreadCount}
-                      </span>
-                    )}
-                  </TabsTrigger>
-                </TabsList>
-                <TabsContent value="tasks" className="mt-0">
-                  <EditableTaskList />
-                </TabsContent>
-                <TabsContent value="planning" className="mt-0">
-                  <PlanningCalendar events={events} />
-                </TabsContent>
-                <TabsContent value="notifications" className="mt-0">
-                  <NotificationList />
-                </TabsContent>
-              </Tabs>
-              
-              <Card className="border-agrifirm-light-green/40 shadow-sm">
-                <CardHeader className="bg-gradient-to-r from-agrifirm-light-green/10 to-agrifirm-light-yellow-2/10 pb-2">
-                  <CardTitle className="text-lg text-agrifirm-black">Ask Agnes</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-4">
-                  <AgentChatInterface />
-                </CardContent>
-              </Card>
             </div>
-          </div>
+          </TabsContent>
         </main>
       </div>
     </>
