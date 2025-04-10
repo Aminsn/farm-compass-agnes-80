@@ -103,8 +103,9 @@ const AdvisorDashboard = () => {
   );
 
   // Filter for advisor-specific notifications
+  // Updated to use the correct notification types from the NotificationType enum
   const advisorNotifications = notifications.filter(n => 
-    n.type === "support_request" || n.type === "farm_alert" || n.type === "system"
+    n.type === "advisor" // Changed from "support_request"
   );
   
   // Custom advisor tasks data
