@@ -6,11 +6,12 @@ import { format, isWithinInterval, parseISO } from 'date-fns';
 import { Event } from '@/types';
 import { useEvents } from '@/context/EventContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar, Filter, RefreshCw } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface CalendarProps {
   events?: Event[];
@@ -21,9 +22,12 @@ const PlanningCalendar: React.FC<CalendarProps> = ({ events = [] }) => {
   const [eventsByDate, setEventsByDate] = useState<{ [key: string]: Event[] }>({});
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
   const [selectedEventType, setSelectedEventType] = useState<string | null>(null);
-  const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
   const [isFilterActive, setIsFilterActive] = useState(false);
   const { updateEvent } = useEvents();
+  
+  // Date range filter inputs
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
 
   useEffect(() => {
     const groupedEvents: { [key: string]: Event[] } = events.reduce((acc: { [key: string]: Event[] }, event) => {
@@ -36,12 +40,12 @@ const PlanningCalendar: React.FC<CalendarProps> = ({ events = [] }) => {
     }, {});
     setEventsByDate(groupedEvents);
     filterEventsByDateRangeAndCriteria(events);
-  }, [events, dateRange, selectedEventType, selectedStatus]);
+  }, [events, dateRange, selectedEventType]);
 
   const filterEventsByDateRangeAndCriteria = (eventsToFilter: Event[]) => {
     let filtered = [...eventsToFilter];
     
-    // Filter by date range if both dates are selected
+    // Filter by date range if both dates are selected from calendar
     if (dateRange[0] && dateRange[1]) {
       filtered = filtered.filter(event => {
         const eventDate = new Date(event.date);
@@ -61,13 +65,8 @@ const PlanningCalendar: React.FC<CalendarProps> = ({ events = [] }) => {
       filtered = filtered.filter(event => event.type === selectedEventType);
     }
     
-    // Apply status filter
-    if (selectedStatus) {
-      filtered = filtered.filter(event => event.status === selectedStatus);
-    }
-    
     setFilteredEvents(filtered);
-    setIsFilterActive(!!selectedEventType || !!selectedStatus || (dateRange[0] !== null && dateRange[1] !== null));
+    setIsFilterActive(!!selectedEventType || (dateRange[0] !== null && dateRange[1] !== null));
   };
 
   const tileContent = ({ date, view }: { date: Date; view: string }) => {
@@ -97,20 +96,35 @@ const PlanningCalendar: React.FC<CalendarProps> = ({ events = [] }) => {
     setSelectedEventType(eventType === "all" ? null : eventType);
   };
 
-  const handleStatusChange = (status: string) => {
-    setSelectedStatus(status === "all" ? null : status);
-  };
-
   const clearFilters = () => {
     setDateRange([new Date(), null]);
     setSelectedEventType(null);
-    setSelectedStatus(null);
     setIsFilterActive(false);
     setFilteredEvents(events);
+    setStartDate("");
+    setEndDate("");
   };
 
-  const handleEventStatusChange = (eventId: string, newStatus: string) => {
-    updateEvent(eventId, { status: newStatus });
+  // New function to handle date range filter submission
+  const handleDateRangeFilter = () => {
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      
+      // Set end time to end of day for inclusive filtering
+      end.setHours(23, 59, 59, 999);
+      
+      setDateRange([start, end]);
+      
+      // Filter events based on the date range
+      const filtered = events.filter(event => {
+        const eventDate = new Date(event.date);
+        return isWithinInterval(eventDate, { start, end });
+      });
+      
+      setFilteredEvents(filtered);
+      setIsFilterActive(true);
+    }
   };
 
   // Helper function to get appropriate badge color based on event type
@@ -135,28 +149,12 @@ const PlanningCalendar: React.FC<CalendarProps> = ({ events = [] }) => {
     }
   };
 
-  // Helper function to get appropriate status color
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'completed':
-        return 'bg-green-100 text-green-800 border border-green-200';
-      case 'in progress':
-        return 'bg-blue-100 text-blue-800 border border-blue-200';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800 border border-yellow-200';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800 border border-red-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border border-gray-200';
-    }
-  };
-
   return (
     <div className="space-y-4">
       {/* Filters above calendar */}
       <div className="bg-white rounded-lg shadow-sm border border-agrifirm-light-green/20 p-4 mb-4">
-        <div className="flex flex-col sm:flex-row gap-4 items-start">
-          <div className="flex-1 space-y-2 w-full">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+          <div className="space-y-2 w-full">
             <label className="text-sm font-medium text-gray-700 block">Event Type</label>
             <Select value={selectedEventType || "all"} onValueChange={handleEventTypeChange}>
               <SelectTrigger className="w-full">
@@ -175,31 +173,42 @@ const PlanningCalendar: React.FC<CalendarProps> = ({ events = [] }) => {
             </Select>
           </div>
           
-          <div className="flex-1 space-y-2 w-full">
-            <label className="text-sm font-medium text-gray-700 block">Status</label>
-            <Select value={selectedStatus || "all"} onValueChange={handleStatusChange}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="in progress">In Progress</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="flex-initial mt-auto">
-            <Button 
-              onClick={clearFilters} 
-              variant="outline" 
-              className="border-agrifirm-grey/30 h-10"
-            >
-              <RefreshCw className="h-4 w-4 mr-1" />
-              Reset
-            </Button>
+          {/* Date Range Filter */}
+          <div className="space-y-2 w-full md:col-span-2">
+            <Label className="text-sm font-medium text-gray-700 block">Date Range</Label>
+            <div className="flex flex-wrap gap-2 items-end">
+              <div className="flex-1 min-w-[120px]">
+                <Input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+              <div className="flex-1 min-w-[120px]">
+                <Input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+              <Button 
+                onClick={handleDateRangeFilter}
+                disabled={!startDate || !endDate}
+                className="bg-agrifirm-green hover:bg-agrifirm-green/90"
+              >
+                Apply
+              </Button>
+              <Button 
+                onClick={clearFilters} 
+                variant="outline" 
+                className="border-agrifirm-grey/30"
+              >
+                <RefreshCw className="h-4 w-4 mr-1" />
+                Reset
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -253,32 +262,10 @@ const PlanningCalendar: React.FC<CalendarProps> = ({ events = [] }) => {
                       
                       <p className="text-gray-600 mt-1 text-xs line-clamp-2">{event.description}</p>
                       
-                      <div className="mt-2 flex flex-col gap-1.5">
+                      <div className="mt-2">
                         <Badge className={`${getEventTypeColor(event.type)} text-xs w-fit`}>
                           {event.type}
                         </Badge>
-                        
-                        <div className="flex items-center">
-                          <span className="text-xs text-gray-500 mr-1">Status:</span>
-                          <Select
-                            value={event.status}
-                            onValueChange={(newStatus) => handleEventStatusChange(event.id, newStatus)}
-                          >
-                            <SelectTrigger className="h-6 min-h-6 pl-2 pr-1 py-0 text-xs min-w-[100px] bg-white border-gray-200">
-                              <SelectValue>
-                                <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs ${getStatusColor(event.status || 'pending')}`}>
-                                  {event.status || 'Pending'}
-                                </span>
-                              </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="pending">Pending</SelectItem>
-                              <SelectItem value="in progress">In Progress</SelectItem>
-                              <SelectItem value="completed">Completed</SelectItem>
-                              <SelectItem value="cancelled">Cancelled</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
                       </div>
                     </li>
                   ))}
