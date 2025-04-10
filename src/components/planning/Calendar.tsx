@@ -94,11 +94,11 @@ const PlanningCalendar: React.FC<CalendarProps> = ({ events = [] }) => {
   };
 
   const handleEventTypeChange = (eventType: string) => {
-    setSelectedEventType(eventType);
+    setSelectedEventType(eventType === "all" ? null : eventType);
   };
 
   const handleStatusChange = (status: string) => {
-    setSelectedStatus(status);
+    setSelectedStatus(status === "all" ? null : status);
   };
 
   const clearFilters = () => {
@@ -152,12 +152,12 @@ const PlanningCalendar: React.FC<CalendarProps> = ({ events = [] }) => {
         <div className="flex flex-col sm:flex-row gap-4 items-start">
           <div className="flex-1 space-y-2 w-full">
             <label className="text-sm font-medium text-gray-700 block">Event Type</label>
-            <Select value={selectedEventType || ''} onValueChange={handleEventTypeChange}>
+            <Select value={selectedEventType || "all"} onValueChange={handleEventTypeChange}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select Event Type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Types</SelectItem>
+                <SelectItem value="all">All Types</SelectItem>
                 <SelectItem value="planting">Planting</SelectItem>
                 <SelectItem value="harvesting">Harvesting</SelectItem>
                 <SelectItem value="inspection">Inspection</SelectItem>
@@ -168,12 +168,12 @@ const PlanningCalendar: React.FC<CalendarProps> = ({ events = [] }) => {
           
           <div className="flex-1 space-y-2 w-full">
             <label className="text-sm font-medium text-gray-700 block">Status</label>
-            <Select value={selectedStatus || ''} onValueChange={handleStatusChange}>
+            <Select value={selectedStatus || "all"} onValueChange={handleStatusChange}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Statuses</SelectItem>
+                <SelectItem value="all">All Statuses</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="in progress">In Progress</SelectItem>
                 <SelectItem value="completed">Completed</SelectItem>
