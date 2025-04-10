@@ -13,6 +13,7 @@ import Chat from "./pages/Chat";
 import Planning from "./pages/Planning";
 import Dashboard from "./pages/Dashboard";
 import Notifications from "./pages/Notifications";
+import AdvisorDashboard from "./pages/AdvisorDashboard";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +32,7 @@ const App = () => (
                 <Route path="/planning" element={<Planning />} />
                 <Route path="/notifications" element={<Notifications />} />
                 <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/advisor" element={<AdvisorDashboard />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>

@@ -5,7 +5,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Menu, X, Sun, Tractor, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const Navbar = () => {
+const AdvisorNavbar = () => {
   const isMobile = useIsMobile();
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
@@ -18,9 +18,12 @@ const Navbar = () => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
           <div className="flex items-center">
-            <Link to="/" className="flex items-center gap-2">
+            <Link to="/advisor" className="flex items-center gap-2">
               <Tractor className="h-8 w-8 text-agrifirm-green" />
-              <span className="text-xl font-bold text-agrifirm-black">Crop Compass</span>
+              <div className="flex flex-col">
+                <span className="text-xl font-bold text-agrifirm-black">Crop Compass</span>
+                <span className="text-xs text-agrifirm-green -mt-1">Advisor Portal</span>
+              </div>
             </Link>
           </div>
 
@@ -37,9 +40,9 @@ const Navbar = () => {
             </div>
           ) : (
             <div className="flex items-center space-x-4">
-              <Link to="/advisor" className="text-agrifirm-black hover:text-agrifirm-green font-medium px-2 py-1 flex items-center">
+              <Link to="/" className="text-agrifirm-black hover:text-agrifirm-green font-medium px-2 py-1 flex items-center">
                 <Users size={16} className="mr-2" />
-                Switch to Advisor View
+                Switch to Farmer View
               </Link>
               <Button 
                 variant="ghost" 
@@ -57,19 +60,19 @@ const Navbar = () => {
           <div className="py-4 border-t border-agrifirm-light-green/20 animate-fade-in">
             <nav className="flex flex-col space-y-4 pb-4">
               <Link 
-                to="/" 
+                to="/advisor" 
                 className="text-agrifirm-black hover:text-agrifirm-green font-medium px-2 py-1"
                 onClick={() => setIsMenuOpen(false)}
               >
-                Dashboard
+                Advisor Dashboard
               </Link>
               <Link 
-                to="/advisor" 
+                to="/" 
                 className="text-agrifirm-black hover:text-agrifirm-green font-medium px-2 py-1 flex items-center"
                 onClick={() => setIsMenuOpen(false)}
               >
                 <Users size={16} className="mr-2" />
-                Switch to Advisor View
+                Switch to Farmer View
               </Link>
             </nav>
           </div>
@@ -79,4 +82,4 @@ const Navbar = () => {
   );
 };
 
-export default Navbar;
+export default AdvisorNavbar;
