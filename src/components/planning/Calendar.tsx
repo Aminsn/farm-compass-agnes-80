@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar as ReactCalendar } from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
-import { format } from 'date-fns';
+import { format, isWithinInterval, parseISO } from 'date-fns';
 import { Event } from '@/types';
 import { useEvents } from '@/context/EventContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -17,10 +17,9 @@ interface CalendarProps {
 }
 
 const PlanningCalendar: React.FC<CalendarProps> = ({ events = [] }) => {
-  const [date, setDate] = useState<Date>(new Date());
+  const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([new Date(), null]);
   const [eventsByDate, setEventsByDate] = useState<{ [key: string]: Event[] }>({});
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedEventType, setSelectedEventType] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
   const [isFilterActive, setIsFilterActive] = useState(false);
@@ -36,8 +35,40 @@ const PlanningCalendar: React.FC<CalendarProps> = ({ events = [] }) => {
       return acc;
     }, {});
     setEventsByDate(groupedEvents);
-    setFilteredEvents(events);
-  }, [events]);
+    filterEventsByDateRangeAndCriteria(events);
+  }, [events, dateRange, selectedEventType, selectedStatus]);
+
+  const filterEventsByDateRangeAndCriteria = (eventsToFilter: Event[]) => {
+    let filtered = [...eventsToFilter];
+    
+    // Filter by date range if both dates are selected
+    if (dateRange[0] && dateRange[1]) {
+      filtered = filtered.filter(event => {
+        const eventDate = new Date(event.date);
+        return isWithinInterval(eventDate, { 
+          start: dateRange[0]!, 
+          end: dateRange[1]! 
+        });
+      });
+    } else if (dateRange[0] && !dateRange[1]) {
+      // If only first date is selected, show events for that specific day
+      const dateString = format(dateRange[0], 'yyyy-MM-dd');
+      filtered = eventsByDate[dateString] || [];
+    }
+    
+    // Apply type filter
+    if (selectedEventType) {
+      filtered = filtered.filter(event => event.type === selectedEventType);
+    }
+    
+    // Apply status filter
+    if (selectedStatus) {
+      filtered = filtered.filter(event => event.status === selectedStatus);
+    }
+    
+    setFilteredEvents(filtered);
+    setIsFilterActive(!!selectedEventType || !!selectedStatus || (dateRange[0] !== null && dateRange[1] !== null));
+  };
 
   const tileContent = ({ date, view }: { date: Date; view: string }) => {
     if (view === 'month') {
@@ -54,46 +85,24 @@ const PlanningCalendar: React.FC<CalendarProps> = ({ events = [] }) => {
     return null;
   };
 
-  const handleDateChange = (date: Date) => {
-    setDate(date);
-    setSelectedDate(date);
-    setSelectedEventType(null);
-    setSelectedStatus(null);
-    setIsFilterActive(false);
-    setFilteredEvents(eventsByDate[format(date, 'yyyy-MM-dd')] || []);
+  const handleDateChange = (value: Date | [Date | null, Date | null]) => {
+    if (Array.isArray(value)) {
+      setDateRange(value);
+    } else {
+      setDateRange([value, null]);
+    }
   };
 
   const handleEventTypeChange = (eventType: string) => {
     setSelectedEventType(eventType);
-    setSelectedDate(null);
-    setSelectedStatus(null);
-    setIsFilterActive(false);
-    setFilteredEvents(events.filter(event => event.type === eventType));
   };
 
   const handleStatusChange = (status: string) => {
     setSelectedStatus(status);
-    setSelectedDate(null);
-    setSelectedEventType(null);
-    setIsFilterActive(false);
-    setFilteredEvents(events.filter(event => event.status === status));
-  };
-
-  const applyFilters = () => {
-    if (selectedDate) {
-      setFilteredEvents(eventsByDate[format(selectedDate, 'yyyy-MM-dd')] || []);
-      setIsFilterActive(true);
-    } else if (selectedEventType) {
-      setFilteredEvents(events.filter(event => event.type === selectedEventType));
-      setIsFilterActive(true);
-    } else if (selectedStatus) {
-      setFilteredEvents(events.filter(event => event.status === selectedStatus));
-      setIsFilterActive(true);
-    }
   };
 
   const clearFilters = () => {
-    setSelectedDate(null);
+    setDateRange([new Date(), null]);
     setSelectedEventType(null);
     setSelectedStatus(null);
     setIsFilterActive(false);
@@ -137,148 +146,142 @@ const PlanningCalendar: React.FC<CalendarProps> = ({ events = [] }) => {
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <div className="md:col-span-1 space-y-4">
-        <div className="bg-white rounded-lg shadow-sm border border-agrifirm-light-green/20 overflow-hidden">
-          <div className="bg-agrifirm-light-yellow-2/30 px-4 py-3 border-b border-agrifirm-light-green/10">
-            <h3 className="font-medium flex items-center text-agrifirm-black">
-              <Calendar className="h-4 w-4 mr-2 text-agrifirm-green" />
-              Calendar
-            </h3>
+    <div className="space-y-4">
+      {/* Filters above calendar */}
+      <div className="bg-white rounded-lg shadow-sm border border-agrifirm-light-green/20 p-4 mb-4">
+        <div className="flex flex-col sm:flex-row gap-4 items-start">
+          <div className="flex-1 space-y-2 w-full">
+            <label className="text-sm font-medium text-gray-700 block">Event Type</label>
+            <Select value={selectedEventType || ''} onValueChange={handleEventTypeChange}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select Event Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">All Types</SelectItem>
+                <SelectItem value="planting">Planting</SelectItem>
+                <SelectItem value="harvesting">Harvesting</SelectItem>
+                <SelectItem value="inspection">Inspection</SelectItem>
+                <SelectItem value="maintenance">Maintenance</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <div className="p-4">
-            <ReactCalendar
-              onChange={handleDateChange}
-              value={date}
-              tileContent={tileContent}
-              className="border-none shadow-none w-full"
-            />
+          
+          <div className="flex-1 space-y-2 w-full">
+            <label className="text-sm font-medium text-gray-700 block">Status</label>
+            <Select value={selectedStatus || ''} onValueChange={handleStatusChange}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">All Statuses</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="in progress">In Progress</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        </div>
-        
-        <div className="bg-white rounded-lg shadow-sm border border-agrifirm-light-green/20 overflow-hidden">
-          <div className="bg-agrifirm-light-yellow-2/30 px-4 py-3 border-b border-agrifirm-light-green/10">
-            <h3 className="font-medium flex items-center text-agrifirm-black">
-              <Filter className="h-4 w-4 mr-2 text-agrifirm-green" />
-              Filter Events
-            </h3>
-          </div>
-          <div className="p-4 space-y-3">
-            <div>
-              <label className="text-sm font-medium text-gray-700 mb-1 block">Event Type</label>
-              <Select onValueChange={handleEventTypeChange}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select Event Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="planting">Planting</SelectItem>
-                  <SelectItem value="harvesting">Harvesting</SelectItem>
-                  <SelectItem value="inspection">Inspection</SelectItem>
-                  <SelectItem value="maintenance">Maintenance</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div>
-              <label className="text-sm font-medium text-gray-700 mb-1 block">Status</label>
-              <Select onValueChange={handleStatusChange}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="in progress">In Progress</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="flex gap-2 pt-2">
-              <Button 
-                onClick={applyFilters} 
-                className="bg-agrifirm-green text-white w-full"
-              >
-                Apply Filters
-              </Button>
-              <Button 
-                onClick={clearFilters} 
-                variant="outline" 
-                className="border-agrifirm-grey/30 w-full"
-              >
-                <RefreshCw className="h-4 w-4 mr-1" />
-                Reset
-              </Button>
-            </div>
+          
+          <div className="flex-initial mt-auto">
+            <Button 
+              onClick={clearFilters} 
+              variant="outline" 
+              className="border-agrifirm-grey/30 h-10"
+            >
+              <RefreshCw className="h-4 w-4 mr-1" />
+              Reset
+            </Button>
           </div>
         </div>
       </div>
       
-      <div className="md:col-span-2">
-        <div className="bg-white rounded-lg shadow-sm border border-agrifirm-light-green/20 overflow-hidden h-full">
-          <div className="bg-agrifirm-light-yellow-2/30 px-4 py-3 border-b border-agrifirm-light-green/10">
-            <h2 className="font-medium text-agrifirm-black">
-              {isFilterActive
-                ? 'Filtered Events'
-                : selectedDate
-                  ? `Events for ${format(selectedDate, 'MMMM d, yyyy')}`
-                  : 'All Events'}
-            </h2>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {/* Calendar - wider (3 cols) */}
+        <div className="md:col-span-3 space-y-4">
+          <div className="bg-white rounded-lg shadow-sm border border-agrifirm-light-green/20 overflow-hidden">
+            <div className="bg-agrifirm-light-yellow-2/30 px-4 py-3 border-b border-agrifirm-light-green/10">
+              <h3 className="font-medium flex items-center text-agrifirm-black">
+                <Calendar className="h-4 w-4 mr-2 text-agrifirm-green" />
+                Calendar {dateRange[0] && dateRange[1] && `(${format(dateRange[0], 'MMM dd')} - ${format(dateRange[1], 'MMM dd')})`}
+              </h3>
+            </div>
+            <div className="p-4 flex justify-center">
+              <ReactCalendar
+                onChange={handleDateChange}
+                value={dateRange}
+                selectRange={true}
+                tileContent={tileContent}
+                className="border-none shadow-none w-full"
+              />
+            </div>
           </div>
-          
-          <ScrollArea className="p-4 h-[calc(100vh-300px)] min-h-[400px] w-full">
-            {filteredEvents.length > 0 ? (
-              <ul className="space-y-3">
-                {filteredEvents.map(event => (
-                  <li key={event.id} className="p-4 rounded-lg shadow-sm bg-white border border-gray-100 hover:border-agrifirm-light-green/30 transition-colors">
-                    <div className="flex justify-between items-start">
-                      <h3 className="font-semibold text-agrifirm-black">{event.title}</h3>
-                      <span className="text-sm text-gray-500 font-medium bg-gray-50 px-2 py-0.5 rounded">
-                        {format(new Date(event.date), 'MMM d, yyyy')}
-                      </span>
-                    </div>
-                    
-                    <p className="text-gray-600 mt-1 text-sm">{event.description}</p>
-                    
-                    <div className="mt-3 flex flex-wrap items-center gap-2">
-                      <Badge className={`${getEventTypeColor(event.type)} font-normal`}>
-                        {event.type}
-                      </Badge>
-                      
-                      <div className="flex-grow"></div>
-                      
-                      <div className="flex items-center">
-                        <span className="text-sm text-gray-500 mr-2">Status:</span>
-                        <Select
-                          value={event.status}
-                          onValueChange={(newStatus) => handleEventStatusChange(event.id, newStatus)}
-                        >
-                          <SelectTrigger className="h-8 min-h-8 pl-3 pr-2 py-0 min-w-[140px] bg-white border-gray-200">
-                            <SelectValue>
-                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs ${getStatusColor(event.status || 'pending')}`}>
-                                {event.status || 'Pending'}
-                              </span>
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="pending">Pending</SelectItem>
-                            <SelectItem value="in progress">In Progress</SelectItem>
-                            <SelectItem value="completed">Completed</SelectItem>
-                            <SelectItem value="cancelled">Cancelled</SelectItem>
-                          </SelectContent>
-                        </Select>
+        </div>
+        
+        {/* Events list - slimmer (1 col) */}
+        <div className="md:col-span-1">
+          <div className="bg-white rounded-lg shadow-sm border border-agrifirm-light-green/20 overflow-hidden h-full">
+            <div className="bg-agrifirm-light-yellow-2/30 px-4 py-3 border-b border-agrifirm-light-green/10">
+              <h2 className="font-medium text-agrifirm-black text-sm">
+                {isFilterActive
+                  ? 'Filtered Events'
+                  : dateRange[0] && !dateRange[1]
+                    ? `Events for ${format(dateRange[0], 'MMM d, yyyy')}`
+                    : 'All Events'}
+              </h2>
+            </div>
+            
+            <ScrollArea className="p-3 h-[calc(100vh-350px)] min-h-[400px] w-full">
+              {filteredEvents.length > 0 ? (
+                <ul className="space-y-3">
+                  {filteredEvents.map(event => (
+                    <li key={event.id} className="p-3 rounded-lg shadow-sm bg-white border border-gray-100 hover:border-agrifirm-light-green/30 transition-colors">
+                      <div className="flex flex-col">
+                        <h3 className="font-semibold text-agrifirm-black text-sm">{event.title}</h3>
+                        <span className="text-xs text-gray-500 font-medium">
+                          {format(new Date(event.date), 'MMM d, yyyy')}
+                        </span>
                       </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-60 text-gray-500">
-                <Calendar className="h-12 w-12 mb-2 text-agrifirm-light-green/50" />
-                <p>No events found for the selected criteria.</p>
-              </div>
-            )}
-          </ScrollArea>
+                      
+                      <p className="text-gray-600 mt-1 text-xs line-clamp-2">{event.description}</p>
+                      
+                      <div className="mt-2 flex flex-col gap-1.5">
+                        <Badge className={`${getEventTypeColor(event.type)} text-xs w-fit`}>
+                          {event.type}
+                        </Badge>
+                        
+                        <div className="flex items-center">
+                          <span className="text-xs text-gray-500 mr-1">Status:</span>
+                          <Select
+                            value={event.status}
+                            onValueChange={(newStatus) => handleEventStatusChange(event.id, newStatus)}
+                          >
+                            <SelectTrigger className="h-6 min-h-6 pl-2 pr-1 py-0 text-xs min-w-[100px] bg-white border-gray-200">
+                              <SelectValue>
+                                <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs ${getStatusColor(event.status || 'pending')}`}>
+                                  {event.status || 'Pending'}
+                                </span>
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pending">Pending</SelectItem>
+                              <SelectItem value="in progress">In Progress</SelectItem>
+                              <SelectItem value="completed">Completed</SelectItem>
+                              <SelectItem value="cancelled">Cancelled</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-60 text-gray-500">
+                  <Calendar className="h-10 w-10 mb-2 text-agrifirm-light-green/50" />
+                  <p className="text-sm text-center">No events found for the selected criteria.</p>
+                </div>
+              )}
+            </ScrollArea>
+          </div>
         </div>
       </div>
     </div>
