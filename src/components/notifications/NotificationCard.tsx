@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
-import { MessageSquare, Package, FileText, Bell } from "lucide-react";
+import { CloudSun, Tractor, Wheat, Bell } from "lucide-react";
 import { useNotifications } from "@/context/NotificationContext";
 import { useToast } from "@/hooks/use-toast";
 
@@ -19,12 +19,12 @@ const NotificationCard: React.FC<NotificationCardProps> = ({ notification }) => 
 
   const getIcon = () => {
     switch (notification.type) {
-      case "advisor":
-        return <MessageSquare className="h-5 w-5 text-purple-500" />;
-      case "order":
-        return <Package className="h-5 w-5 text-orange-500" />;
-      case "recommendation":
-        return <FileText className="h-5 w-5 text-blue-500" />;
+      case "weather":
+        return <CloudSun className="h-5 w-5 text-blue-500" />;
+      case "equipment":
+        return <Tractor className="h-5 w-5 text-orange-500" />;
+      case "crop":
+        return <Wheat className="h-5 w-5 text-green-500" />;
       default:
         return <Bell className="h-5 w-5 text-gray-500" />;
     }
@@ -32,12 +32,12 @@ const NotificationCard: React.FC<NotificationCardProps> = ({ notification }) => 
 
   const getBadgeText = () => {
     switch (notification.type) {
-      case "advisor":
-        return "Advisor";
-      case "order":
-        return "Order";
-      case "recommendation":
-        return "Recommendation";
+      case "weather":
+        return "Weather";
+      case "equipment":
+        return "Equipment";
+      case "crop":
+        return "Crop";
       default:
         return "Notification";
     }
@@ -45,11 +45,11 @@ const NotificationCard: React.FC<NotificationCardProps> = ({ notification }) => 
 
   const getBadgeVariant = () => {
     switch (notification.type) {
-      case "advisor":
+      case "weather":
         return "secondary";
-      case "order":
+      case "equipment":
         return "default";
-      case "recommendation":
+      case "crop":
         return "outline";
       default:
         return "default";
@@ -59,20 +59,25 @@ const NotificationCard: React.FC<NotificationCardProps> = ({ notification }) => 
   const handleAction = () => {
     markAsRead(notification.id);
     
-    if (notification.type === "order") {
+    if (notification.type === "equipment") {
       toast({
-        title: "Order Approved",
-        description: "Your order has been approved and will be delivered as scheduled.",
+        title: "Service Scheduled",
+        description: "Your equipment service has been scheduled with your local dealer.",
       });
-    } else if (notification.type === "recommendation") {
+    } else if (notification.type === "crop") {
       toast({
-        title: "Plan Created",
-        description: "A new treatment plan has been added to your tasks.",
+        title: "Task Added",
+        description: "A new task has been added to your schedule.",
+      });
+    } else if (notification.type === "weather") {
+      toast({
+        title: "Weather Alert Noted",
+        description: "The weather alert has been acknowledged.",
       });
     } else {
       toast({
-        title: "Message Read",
-        description: "Your message has been marked as read.",
+        title: "Alert Acknowledged",
+        description: "The alert has been marked as read.",
       });
     }
   };
@@ -80,8 +85,8 @@ const NotificationCard: React.FC<NotificationCardProps> = ({ notification }) => 
   const handleDismiss = () => {
     clearNotification(notification.id);
     toast({
-      title: "Notification Dismissed",
-      description: "The notification has been removed from your list.",
+      title: "Alert Dismissed",
+      description: "The alert has been removed from your list.",
     });
   };
 

@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 
-export type NotificationType = "advisor" | "order" | "recommendation";
+export type NotificationType = "weather" | "crop" | "equipment";
 
 export interface Notification {
   id: string;
@@ -34,45 +34,45 @@ export const useNotifications = () => {
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
-  // Mock data with advisor-specific notifications
+  // Mock data with farmer-specific notifications
   useEffect(() => {
     const mockNotifications: Omit<Notification, "id" | "read">[] = [
       {
-        type: "advisor",
-        title: "Client Support Request",
-        message: "John Smith from Green Valley Farm has requested assistance with a potential pest issue in his corn fields. Please schedule a visit within the next 48 hours.",
+        type: "weather",
+        title: "Frost Warning",
+        message: "Temperature expected to drop below freezing tonight. Consider protecting sensitive crops in the east field.",
         date: new Date(Date.now() - 3 * 60 * 60 * 1000), // 3 hours ago
         actionRequired: true,
-        actionText: "Schedule Visit",
+        actionText: "View Weather Forecast",
       },
       {
-        type: "order",
-        title: "Test Results Available",
-        message: "Soil sample test results for Williams farm are now available. Results indicate low potassium levels. Review and prepare recommendations.",
+        type: "crop",
+        title: "Corn Growth Stage Alert",
+        message: "Your corn crop in the north field has reached the V6 growth stage. Time to apply side-dress nitrogen fertilizer within the next 3 days.",
         date: new Date(Date.now() - 12 * 60 * 60 * 1000), // 12 hours ago
         actionRequired: true,
-        actionText: "Review Results",
+        actionText: "Schedule Application",
       },
       {
-        type: "recommendation",
-        title: "Recommendation Review Required",
-        message: "Your crop rotation recommendation for Blue Ridge Farm requires approval from the regional manager before sending to the client. Please review and submit for approval.",
+        type: "equipment",
+        title: "Tractor Maintenance Due",
+        message: "Your John Deere 8R tractor is due for scheduled maintenance. 50 engine hours remaining until service is required.",
         date: new Date(Date.now() - 24 * 60 * 60 * 1000), // 24 hours ago
         actionRequired: true,
-        actionText: "Submit for Approval",
+        actionText: "Schedule Service",
       },
       {
-        type: "advisor",
-        title: "Weather Alert for Client Regions",
-        message: "Severe weather warning issued for Iowa region affecting 3 of your client farms. Consider sending preventative measures and recommendations.",
+        type: "weather",
+        title: "Rain Forecast Updated",
+        message: "The 5-day forecast has been updated. 1.5 inches of rain expected over the next 48 hours. Consider adjusting your irrigation schedule.",
         date: new Date(Date.now() - 8 * 60 * 60 * 1000), // 8 hours ago
         actionRequired: true,
-        actionText: "Send Recommendations",
+        actionText: "Adjust Irrigation",
       },
       {
-        type: "recommendation",
-        title: "New Research Available",
-        message: "New research on sustainable fertilizer application methods is now available in the knowledge base. This may be relevant for several of your client farms.",
+        type: "crop",
+        title: "Pest Detection Alert",
+        message: "Aphid population detected in your soybean field. Current levels approaching economic threshold. Scout fields and consider treatment options.",
         date: new Date(Date.now() - 36 * 60 * 60 * 1000), // 36 hours ago
         actionRequired: false,
       },
