@@ -1,7 +1,9 @@
 
+import { useToast } from "@/hooks/use-toast";
+
 type Message = {
   role: "system" | "user" | "assistant";
-  content: string | Array<{type: "text" | "image_url", text?: string, image_url?: {url: string}}>;
+  content: string;
 };
 
 export async function sendChatRequest(
@@ -9,16 +11,6 @@ export async function sendChatRequest(
   apiKey: string
 ): Promise<string> {
   try {
-    // Validate API key format before sending
-    if (!apiKey || apiKey.trim() === "") {
-      throw new Error("API key is required");
-    }
-    
-    // Check if the API key is in the correct format (starts with "sk-" or "sk-proj-")
-    if (!apiKey.startsWith("sk-")) {
-      throw new Error("Invalid API key format. OpenAI API keys should start with 'sk-'");
-    }
-
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -26,7 +18,7 @@ export async function sendChatRequest(
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "gpt-4o", // Using gpt-4o since it supports vision
+        model: "gpt-3.5-turbo",
         messages,
         temperature: 0.7,
         max_tokens: 1000,
