@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
-import { CloudSun, Tractor, Wheat, Bell } from "lucide-react";
+import { CloudSun, Tractor, Wheat, Bell, UserRound, Calendar, FileText, Users } from "lucide-react";
 import { useNotifications } from "@/context/NotificationContext";
 import { useToast } from "@/hooks/use-toast";
 
@@ -25,6 +25,16 @@ const NotificationCard: React.FC<NotificationCardProps> = ({ notification }) => 
         return <Tractor className="h-5 w-5 text-orange-500" />;
       case "crop":
         return <Wheat className="h-5 w-5 text-green-500" />;
+      case "advisor":
+        if (notification.title.includes("Visit")) {
+          return <Calendar className="h-5 w-5 text-purple-500" />;
+        } else if (notification.title.includes("Report") || notification.title.includes("Results") || notification.title.includes("Test")) {
+          return <FileText className="h-5 w-5 text-indigo-500" />;
+        } else if (notification.title.includes("Request")) {
+          return <Users className="h-5 w-5 text-pink-500" />;
+        } else {
+          return <UserRound className="h-5 w-5 text-violet-500" />;
+        }
       default:
         return <Bell className="h-5 w-5 text-gray-500" />;
     }
@@ -38,6 +48,18 @@ const NotificationCard: React.FC<NotificationCardProps> = ({ notification }) => 
         return "Equipment";
       case "crop":
         return "Crop";
+      case "advisor":
+        if (notification.title.includes("Visit")) {
+          return "Farm Visit";
+        } else if (notification.title.includes("Report") || notification.title.includes("Results") || notification.title.includes("Test")) {
+          return "Reports";
+        } else if (notification.title.includes("Request")) {
+          return "Support Request";
+        } else if (notification.title.includes("Training") || notification.title.includes("Webinar")) {
+          return "Training";
+        } else {
+          return "Advisory";
+        }
       default:
         return "Notification";
     }
@@ -51,6 +73,8 @@ const NotificationCard: React.FC<NotificationCardProps> = ({ notification }) => 
         return "default";
       case "crop":
         return "outline";
+      case "advisor":
+        return "destructive";
       default:
         return "default";
     }
@@ -73,6 +97,12 @@ const NotificationCard: React.FC<NotificationCardProps> = ({ notification }) => 
       toast({
         title: "Weather Alert Noted",
         description: "The weather alert has been acknowledged.",
+      });
+    } else if (notification.type === "advisor") {
+      const actionType = getBadgeText().toLowerCase();
+      toast({
+        title: `${actionType} Acknowledged`,
+        description: `You have acknowledged the ${actionType.toLowerCase()}.`,
       });
     } else {
       toast({

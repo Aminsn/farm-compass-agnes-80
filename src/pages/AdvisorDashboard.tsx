@@ -102,7 +102,7 @@ const AdvisorDashboard = () => {
   );
 
   const advisorNotifications = notifications.filter(n => 
-    n.type === "advisor"
+    n.type === "advisor" as NotificationType
   );
   
   return (
