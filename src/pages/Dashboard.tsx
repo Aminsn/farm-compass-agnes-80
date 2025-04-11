@@ -1,4 +1,3 @@
-
 import React from "react";
 import EditableTaskList from "@/components/dashboard/EditableTaskList";
 import WeatherCard from "@/components/dashboard/WeatherCard";
@@ -16,7 +15,10 @@ import { Bell, UserRound } from "lucide-react";
 const Dashboard = () => {
   const { notifications } = useNotifications();
   const { events } = useEvents();
-  const unreadCount = notifications.filter(n => !n.read).length;
+  
+  // Only count farmer notifications
+  const farmerNotifications = notifications.filter(n => n.viewType === "farmer");
+  const unreadCount = farmerNotifications.filter(n => !n.read).length;
   
   return (
     <div className="container mx-auto py-6 px-4">
