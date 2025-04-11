@@ -27,9 +27,9 @@ const NotificationList = () => {
     .sort((a, b) => b.date.getTime() - a.date.getTime());
 
   const filterButtons = [
-    { label: "Advisor", value: "advisor" },
-    { label: "Orders", value: "order" },
-    { label: "Recommendations", value: "recommendation" },
+    { label: "Weather", value: "weather" },
+    { label: "Crop", value: "crop" },
+    { label: "Equipment", value: "equipment" },
   ];
 
   const clearFilters = () => {
@@ -44,7 +44,7 @@ const NotificationList = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Bell className="h-5 w-5 text-agrifirm-green" />
-          <h2 className="text-xl font-semibold">Your Notifications</h2>
+          <h2 className="text-xl font-semibold">Farm Alerts</h2>
           {unreadCount > 0 && (
             <span className="ml-2 rounded-full bg-agrifirm-green text-white px-2 py-0.5 text-xs font-medium">
               {unreadCount} unread
@@ -56,7 +56,7 @@ const NotificationList = () => {
       <div className="relative mb-4">
         <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
         <Input
-          placeholder="Search notifications..."
+          placeholder="Search farm alerts..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="pl-8"
@@ -93,11 +93,11 @@ const NotificationList = () => {
       ) : (
         <div className="text-center py-10 text-gray-500">
           <Bell className="mx-auto h-10 w-10 text-gray-400 mb-3" />
-          <h3 className="text-lg font-medium mb-1">No notifications found</h3>
+          <h3 className="text-lg font-medium mb-1">No farm alerts found</h3>
           <p className="text-sm">
             {filter || searchTerm
               ? "Try changing your filters or search term"
-              : "You're all caught up!"}
+              : "Your fields are looking good! No alerts at this time."}
           </p>
         </div>
       )}

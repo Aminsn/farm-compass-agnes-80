@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Check, Clock, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,40 +12,40 @@ type Task = {
   date: string;
 };
 
-// Sample tasks data - Advisor-specific tasks
+// Sample tasks data - Farmer-specific tasks
 const sampleTasks: Task[] = [
   {
     id: "1",
-    title: "Review Soil Test Results",
-    description: "Analyze soil test results for the Johnson farm and prepare recommendations",
+    title: "Apply Fertilizer",
+    description: "Apply nitrogen fertilizer to the corn field in the north section",
     status: "urgent",
     date: "2025-04-10"
   },
   {
     id: "2",
-    title: "Create Crop Rotation Plan",
-    description: "Develop a 3-year crop rotation plan for Williams farm",
+    title: "Check Irrigation System",
+    description: "Inspect and clean irrigation nozzles in the soybean field",
     status: "pending",
     date: "2025-04-10"
   },
   {
     id: "3",
-    title: "Submit Quarterly Reports",
-    description: "Complete and submit quarterly performance reports for all client farms",
+    title: "Harvest Winter Wheat",
+    description: "Begin harvesting winter wheat in the east field",
     status: "completed",
     date: "2025-04-09"
   },
   {
     id: "4",
-    title: "Prepare Fertilizer Recommendations",
-    description: "Create custom fertilizer application plans for spring planting",
+    title: "Repair Barn Door",
+    description: "Fix the loose hinge on the north barn door",
     status: "pending",
     date: "2025-04-11"
   },
   {
     id: "5",
-    title: "Schedule Client Follow-ups",
-    description: "Contact clients with upcoming planting seasons to schedule consultations",
+    title: "Seed Planting",
+    description: "Prepare seed drill for spring planting of barley",
     status: "pending",
     date: "2025-04-10"
   }
@@ -85,7 +86,7 @@ const TaskList = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-agrifirm-black mb-4">Today's Tasks</h2>
+        <h2 className="text-xl font-semibold text-agrifirm-black mb-4">Today's Farm Tasks</h2>
         {todayTasks.length > 0 ? (
           <div className="space-y-3">
             {todayTasks.map(task => (
@@ -120,14 +121,14 @@ const TaskList = () => {
           </div>
         ) : (
           <div className="farm-card bg-agrifirm-light-yellow-2/50 text-center">
-            <p>No tasks scheduled for today</p>
+            <p>No farm tasks scheduled for today</p>
           </div>
         )}
       </div>
 
       {upcomingTasks.length > 0 && (
         <div>
-          <h2 className="text-xl font-semibold text-agrifirm-black mb-4">Upcoming Tasks</h2>
+          <h2 className="text-xl font-semibold text-agrifirm-black mb-4">Upcoming Field Work</h2>
           <div className="space-y-3">
             {upcomingTasks.map(task => (
               <div key={task.id} className="farm-card">
@@ -151,7 +152,7 @@ const TaskList = () => {
 
       {pastTasks.length > 0 && (
         <div>
-          <h2 className="text-xl font-semibold text-red-500 mb-4">Overdue Tasks</h2>
+          <h2 className="text-xl font-semibold text-red-500 mb-4">Overdue Farm Tasks</h2>
           <div className="space-y-3">
             {pastTasks.map(task => (
               <div key={task.id} className="farm-card bg-red-50 border-red-100">
