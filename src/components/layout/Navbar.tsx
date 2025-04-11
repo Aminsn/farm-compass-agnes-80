@@ -13,19 +13,6 @@ const Navbar = () => {
     setIsMenuOpen(!isMenuOpen);
   };
 
-  // Handle navigation with scroll control
-  const handleNavigation = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    // Prevent default behavior
-    e.preventDefault();
-    // Navigate to the link but stay at the top of the page
-    window.scrollTo(0, 0);
-    // Get the href and navigate programmatically
-    const href = e.currentTarget.getAttribute('href');
-    if (href) {
-      window.location.href = href;
-    }
-  };
-
   return (
     <header className="bg-white border-b border-agrifirm-light-green/30 sticky top-0 z-50">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -50,14 +37,10 @@ const Navbar = () => {
             </div>
           ) : (
             <div className="flex items-center space-x-4">
-              <a 
-                href="/advisor" 
-                className="text-agrifirm-black hover:text-agrifirm-green font-medium px-2 py-1 flex items-center"
-                onClick={handleNavigation}
-              >
+              <Link to="/advisor" className="text-agrifirm-black hover:text-agrifirm-green font-medium px-2 py-1 flex items-center">
                 <Users size={16} className="mr-2" />
                 Switch to Advisor View
-              </a>
+              </Link>
               <Button 
                 variant="ghost" 
                 size="icon"
@@ -80,17 +63,14 @@ const Navbar = () => {
               >
                 Dashboard
               </Link>
-              <a 
-                href="/advisor" 
+              <Link 
+                to="/advisor" 
                 className="text-agrifirm-black hover:text-agrifirm-green font-medium px-2 py-1 flex items-center"
-                onClick={(e) => {
-                  setIsMenuOpen(false);
-                  handleNavigation(e);
-                }}
+                onClick={() => setIsMenuOpen(false)}
               >
                 <Users size={16} className="mr-2" />
                 Switch to Advisor View
-              </a>
+              </Link>
             </nav>
           </div>
         )}
