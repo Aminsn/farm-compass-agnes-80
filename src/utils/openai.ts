@@ -3,7 +3,7 @@ import { useToast } from "@/hooks/use-toast";
 
 type Message = {
   role: "system" | "user" | "assistant";
-  content: string;
+  content: string | Array<{type: "text" | "image_url", text?: string, image_url?: {url: string}}>;
 };
 
 export async function sendChatRequest(
@@ -18,7 +18,7 @@ export async function sendChatRequest(
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "gpt-3.5-turbo",
+        model: "gpt-4o", // Using gpt-4o since it supports vision
         messages,
         temperature: 0.7,
         max_tokens: 1000,
