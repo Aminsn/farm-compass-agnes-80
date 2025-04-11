@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { Send, User, Bot, HelpCircle, X, Settings, Image as ImageIcon, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -68,7 +67,8 @@ const AgentChatInterface = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const [apiKey, setApiKey] = useState<string>(() => {
-    return localStorage.getItem("openai_api_key") || "";
+    const savedKey = localStorage.getItem("openai_api_key") || "";
+    return savedKey || "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";
   });
   const [isApiKeyDialogOpen, setIsApiKeyDialogOpen] = useState(false);
   const { events, addEvent, deleteEvent } = useEvents();
@@ -292,7 +292,6 @@ const AgentChatInterface = () => {
         return;
       }
       
-      // Validate API key format
       if (!apiKey.startsWith("sk-")) {
         toast({
           title: "Invalid API Key Format",
@@ -336,7 +335,6 @@ const AgentChatInterface = () => {
     } catch (error) {
       console.error("Failed to get response:", error);
       
-      // Add error message to chat
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: error instanceof Error 
@@ -453,7 +451,7 @@ const AgentChatInterface = () => {
                 <DialogTitle>OpenAI API Key</DialogTitle>
                 <DialogDescription>
                   Enter your OpenAI API key to enable chat functionality.
-                  Keys should start with "sk-".
+                  Keys should start with "sk-" or "sk-proj-".
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-2">

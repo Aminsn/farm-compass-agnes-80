@@ -14,7 +14,7 @@ export async function sendChatRequest(
       throw new Error("API key is required");
     }
     
-    // Check if the API key is in the correct format (starts with "sk-")
+    // Check if the API key is in the correct format (starts with "sk-" or "sk-proj-")
     if (!apiKey.startsWith("sk-")) {
       throw new Error("Invalid API key format. OpenAI API keys should start with 'sk-'");
     }
