@@ -9,78 +9,78 @@ interface EventContextProps {
   updateEvent: (id: string, updates: Partial<Event>) => void;
 }
 
-// Sample calendar event data - With advisor-specific events
+// Sample calendar event data - With farmer-specific events
 const sampleEvents: Event[] = [
   {
     id: "1",
     date: new Date(2025, 3, 10), // April 10, 2025
-    title: "Farm Visit - Johnson Farm",
-    description: "Soil sampling and crop assessment",
-    type: "visit",
+    title: "Plant Corn - North Field",
+    description: "Weather conditions optimal for corn planting in the north field",
+    type: "planting",
     status: "pending"
   },
   {
     id: "2",
     date: new Date(2025, 3, 12), // April 12, 2025
-    title: "Client Meeting - Williams Farm",
-    description: "Discuss crop rotation plan and fertilizer recommendations",
-    type: "meeting",
-    status: "in progress"
+    title: "Equipment Maintenance - Tractors",
+    description: "Routine maintenance for John Deere tractors before spring planting continues",
+    type: "maintenance",
+    status: "pending"
   },
   {
     id: "3",
     date: new Date(2025, 3, 15), // April 15, 2025
-    title: "Regional Agricultural Conference",
-    description: "Present new sustainable farming practices",
-    type: "conference",
+    title: "Fertilizer Delivery",
+    description: "Scheduled delivery of nitrogen and phosphorus fertilizers",
+    type: "delivery",
     status: "pending"
   },
   {
     id: "4",
     date: new Date(2025, 3, 18), // April 18, 2025
-    title: "Quarterly Client Reviews",
-    description: "Performance reviews for all client farms",
-    type: "review",
-    status: "completed"
+    title: "Irrigation System Check",
+    description: "Test and prepare irrigation systems for the growing season",
+    type: "maintenance",
+    status: "pending"
   },
   {
     id: "5",
     date: new Date(2025, 3, 20), // April 20, 2025
-    title: "Training Workshop - Advanced Soil Management",
-    description: "Host workshop for local farmers",
-    type: "training",
+    title: "Plant Soybeans - West Field",
+    description: "Begin soybean planting in the west field rotation",
+    type: "planting",
     status: "pending"
   },
   {
     id: "6",
     date: new Date(2025, 3, 22), // April 22, 2025
-    title: "Team Coordination Meeting",
-    description: "Weekly team sync to discuss client issues and priorities",
-    type: "meeting",
+    title: "Local Farmers Market",
+    description: "Attend local farmers market to sell early season produce",
+    type: "market",
     status: "pending"
   },
   {
     id: "7",
     date: new Date(2025, 3, 25), // April 25, 2025
-    title: "Equipment Demonstration - Smith Farm",
-    description: "Demonstrate new precision agriculture equipment",
-    type: "demonstration",
+    title: "Apply Herbicide - South Field",
+    description: "Apply pre-emergent herbicide to control weeds in the south field",
+    type: "spraying",
     status: "pending"
   },
   {
     id: "8",
     date: new Date(2025, 3, 28), // April 28, 2025
-    title: "Research Analysis Meeting",
-    description: "Review latest agricultural research findings with research team",
-    type: "meeting",
+    title: "Livestock Veterinary Visit",
+    description: "Routine health check for cattle herd",
+    type: "livestock",
     status: "pending"
   },
   {
     id: "9",
     date: new Date(2025, 3, 30), // April 30, 2025
-    title: "End-of-Month Reporting",
-    description: "Prepare monthly performance reports for all client farms",
-    type: "reporting",
+    title: "Seed Inventory Check",
+    description: "Inventory remaining seeds and place orders for additional supplies",
+    type: "inventory",
     status: "pending"
   }
 ];
