@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { Send, User, Bot, HelpCircle, X, Settings, Image as ImageIcon, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -24,7 +23,6 @@ type Message = {
   image?: string; // Base64 string for uploaded images
 };
 
-// Sample initial messages
 const initialMessages: Message[] = [
   {
     id: "1",
@@ -34,7 +32,6 @@ const initialMessages: Message[] = [
   }
 ];
 
-// Sample suggested questions
 const suggestedQuestions = [
   "Tell me about my farm's soil conditions",
   "What crops am I currently growing?",
@@ -43,7 +40,6 @@ const suggestedQuestions = [
   "What's the recommended irrigation schedule for my farm?"
 ];
 
-// Initial system message to define Agnes's role
 const SYSTEM_MESSAGE = {
   role: "system",
   content: `You are Agnes, a helpful and knowledgeable AI farming assistant with agentic capabilities. 
@@ -71,7 +67,6 @@ const AgentChatInterface = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const [apiKey, setApiKey] = useState<string>(() => {
-    // Try to get API key from localStorage if available
     return localStorage.getItem("openai_api_key") || "";
   });
   const [isApiKeyDialogOpen, setIsApiKeyDialogOpen] = useState(false);
@@ -83,19 +78,16 @@ const AgentChatInterface = () => {
   const [isDocLoading, setIsDocLoading] = useState(false);
   const [docError, setDocError] = useState<string | null>(null);
   
-  // New state for image handling
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isImageUploading, setIsImageUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // Fetch farm document and external knowledge base on first load
   useEffect(() => {
     const fetchFarmInformation = async () => {
       setIsDocLoading(true);
       setDocError(null);
       
       try {
-        // Fetch farm document from storage
         const { data: farmDocData, error: farmDocError } = await supabase.functions.invoke('get-farm-doc');
         
         if (farmDocError) {
@@ -106,7 +98,6 @@ const AgentChatInterface = () => {
           setFarmDocContent(farmDocData.documentContent || "");
         }
         
-        // Fetch external knowledge base
         const { data: externalKnowledgeData, error: externalKnowledgeError } = await supabase.functions.invoke('get-external-knowledge');
         
         if (externalKnowledgeError) {
@@ -127,7 +118,6 @@ const AgentChatInterface = () => {
     fetchFarmInformation();
   }, []);
   
-  // Image upload handler
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     setIsImageUploading(true);
     const file = e.target.files?.[0];
@@ -137,7 +127,6 @@ const AgentChatInterface = () => {
       return;
     }
     
-    // Check file type and size
     if (!file.type.startsWith('image/')) {
       toast({
         title: "Invalid file type",
@@ -148,7 +137,6 @@ const AgentChatInterface = () => {
       return;
     }
     
-    // Limit file size (5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast({
         title: "File too large",
@@ -159,7 +147,6 @@ const AgentChatInterface = () => {
       return;
     }
     
-    // Convert image to base64
     const reader = new FileReader();
     reader.onload = () => {
       const base64String = reader.result as string;
@@ -177,7 +164,6 @@ const AgentChatInterface = () => {
     reader.readAsDataURL(file);
   };
   
-  // Remove selected image
   const removeSelectedImage = () => {
     setSelectedImage(null);
     if (fileInputRef.current) {
@@ -185,29 +171,25 @@ const AgentChatInterface = () => {
     }
   };
   
-  // Save API key to localStorage whenever it changes
   useEffect(() => {
     if (apiKey) {
       localStorage.setItem("openai_api_key", apiKey);
     }
   }, [apiKey]);
 
-  // Convert chat history to message format
   const prepareMessagesForAPI = (userMessage: string) => {
     const historyMessages = [];
     
-    // Add system message first
     historyMessages.push(SYSTEM_MESSAGE);
     
-    // Add farm document context if available
     const farmContextSources = [];
     
     if (farmDocContent) {
-      farmContextSources.push(`FARM DOCUMENT: ${farmDocContent.slice(0, 4000)}`); // Limit to avoid exceeding token limits
+      farmContextSources.push(`FARM DOCUMENT: ${farmDocContent.slice(0, 4000)}`);
     }
     
     if (externalKnowledgeBase) {
-      farmContextSources.push(`FARM KNOWLEDGE BASE: ${externalKnowledgeBase.slice(0, 4000)}`); // Limit to avoid exceeding token limits
+      farmContextSources.push(`FARM KNOWLEDGE BASE: ${externalKnowledgeBase.slice(0, 4000)}`);
     }
     
     if (farmContextSources.length > 0) {
@@ -219,7 +201,6 @@ const AgentChatInterface = () => {
       historyMessages.push(farmContext);
     }
     
-    // Add task and event context
     const contextMessage = {
       role: "system" as const,
       content: `Current user context:
@@ -228,12 +209,10 @@ const AgentChatInterface = () => {
     };
     historyMessages.push(contextMessage);
     
-    // Add up to 10 most recent messages from chat history (to stay within context limits)
     const recentMessages = messages.slice(-10);
     
     recentMessages.forEach(msg => {
       if (msg.image) {
-        // If the message has an image, create content with both text and image
         historyMessages.push({
           role: msg.sender === "user" ? "user" : "assistant",
           content: [
@@ -242,7 +221,6 @@ const AgentChatInterface = () => {
           ]
         });
       } else {
-        // Regular text message
         historyMessages.push({
           role: msg.sender === "user" ? "user" : "assistant",
           content: msg.content
@@ -250,7 +228,6 @@ const AgentChatInterface = () => {
       }
     });
     
-    // Add the new user message, with image if available
     if (selectedImage) {
       historyMessages.push({
         role: "user",
@@ -269,7 +246,6 @@ const AgentChatInterface = () => {
     return historyMessages;
   };
 
-  // Process agent actions from the user's message
   const processAgentActions = (userMessage: string): string => {
     const actions = parseAgentActions(userMessage);
     if (actions.length === 0) return "";
@@ -278,15 +254,12 @@ const AgentChatInterface = () => {
     return results.join("\n");
   };
 
-  // Auto-create calendar event from message without confirmation
   const autoCreateEventFromMessage = (message: string) => {
     const possibleEvent = extractEventFromMessage(message);
     
     if (possibleEvent) {
-      // Add the event to the calendar automatically
       const eventId = addEvent(possibleEvent);
       
-      // Show a toast notification
       toast({
         title: "Event Added",
         description: `"${possibleEvent.title}" has been added to your calendar.`,
@@ -298,9 +271,7 @@ const AgentChatInterface = () => {
     return "";
   };
 
-  // Send message to OpenAI and get response
   const getOpenAIResponse = async (question: string) => {
-    // Add user message
     const userMessage: Message = {
       id: Date.now().toString(),
       content: question,
@@ -314,26 +285,20 @@ const AgentChatInterface = () => {
     setIsTyping(true);
     
     try {
-      // Check if API key is available
       if (!apiKey) {
         setIsApiKeyDialogOpen(true);
         setIsTyping(false);
         return;
       }
       
-      // Process any agent actions in the message
       const agentResults = processAgentActions(question);
       
-      // Automatically create event from the message if possible
       const eventResult = autoCreateEventFromMessage(question);
       
-      // Prepare messages for API
       const apiMessages = prepareMessagesForAPI(question);
       
-      // Get response from OpenAI
       let responseContent = await sendChatRequest(apiMessages, apiKey);
       
-      // If we performed agent actions or created an event, add them to the response
       let agentActions = [];
       if (agentResults) agentActions.push(agentResults);
       if (eventResult) agentActions.push(eventResult);
@@ -342,7 +307,6 @@ const AgentChatInterface = () => {
         responseContent = `${agentActions.join("\n\n")}\n\n${responseContent}`;
       }
       
-      // Add Agnes response
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: responseContent,
@@ -352,13 +316,11 @@ const AgentChatInterface = () => {
       
       setMessages(prev => [...prev, assistantMessage]);
       
-      // Clear the selected image after the request is complete
       setSelectedImage(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
     } catch (error) {
-      // Error is already handled in sendChatRequest
       console.error("Failed to get response:", error);
     } finally {
       setIsTyping(false);
@@ -367,11 +329,9 @@ const AgentChatInterface = () => {
 
   const handleSendMessage = () => {
     if (input.trim() || selectedImage) {
-      // Use OpenAI if API key is available, otherwise show dialog
       if (apiKey) {
         getOpenAIResponse(input.trim());
       } else {
-        // Show dialog to enter API key
         setIsApiKeyDialogOpen(true);
       }
     } else {
@@ -407,7 +367,6 @@ const AgentChatInterface = () => {
     });
   };
 
-  // Save API key and close dialog
   const saveApiKey = () => {
     if (apiKey.trim()) {
       localStorage.setItem("openai_api_key", apiKey);
@@ -417,7 +376,6 @@ const AgentChatInterface = () => {
         description: "Your OpenAI API key has been saved securely.",
       });
       
-      // If there was a pending message, send it now
       if (input.trim() || selectedImage) {
         getOpenAIResponse(input.trim());
       }
@@ -430,7 +388,6 @@ const AgentChatInterface = () => {
     }
   };
 
-  // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
