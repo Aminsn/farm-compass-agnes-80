@@ -3,7 +3,7 @@ import { useToast } from "@/hooks/use-toast";
 
 type Message = {
   role: "system" | "user" | "assistant";
-  content: string;
+  content: string | Array<{type: "text" | "image_url", text?: string, image_url?: {url: string}}>;
 };
 
 export async function sendChatRequest(
