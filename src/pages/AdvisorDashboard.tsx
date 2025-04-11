@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Helmet } from "react-helmet";
 import Navbar from "@/components/layout/AdvisorNavbar";
 import { useEvents } from "@/context/EventContext";
-import { useNotifications } from "@/context/NotificationContext";
+import { useNotifications, NotificationType } from "@/context/NotificationContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PlanningCalendar from "@/components/planning/Calendar";
 import NotificationList from "@/components/notifications/NotificationList";
@@ -102,7 +102,7 @@ const AdvisorDashboard = () => {
   );
 
   const advisorNotifications = notifications.filter(n => 
-    n.type === "advisor" as NotificationType
+    n.type === "advisor"
   );
   
   return (
