@@ -9,6 +9,16 @@ export async function sendChatRequest(
   apiKey: string
 ): Promise<string> {
   try {
+    // Validate API key format before sending
+    if (!apiKey || apiKey.trim() === "") {
+      throw new Error("API key is required");
+    }
+    
+    // Check if the API key is in the correct format (starts with "sk-")
+    if (!apiKey.startsWith("sk-")) {
+      throw new Error("Invalid API key format. OpenAI API keys should start with 'sk-'");
+    }
+
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {

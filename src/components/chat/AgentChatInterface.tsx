@@ -1,10 +1,11 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import { Send, User, Bot, HelpCircle, X, Settings, Image as ImageIcon, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { sendChatRequest } from "@/utils/openai";
@@ -291,6 +292,18 @@ const AgentChatInterface = () => {
         return;
       }
       
+      // Validate API key format
+      if (!apiKey.startsWith("sk-")) {
+        toast({
+          title: "Invalid API Key Format",
+          description: "Your OpenAI API key should start with 'sk-'. Please check your key.",
+          variant: "destructive",
+        });
+        setIsApiKeyDialogOpen(true);
+        setIsTyping(false);
+        return;
+      }
+      
       const agentResults = processAgentActions(question);
       
       const eventResult = autoCreateEventFromMessage(question);
@@ -322,6 +335,24 @@ const AgentChatInterface = () => {
       }
     } catch (error) {
       console.error("Failed to get response:", error);
+      
+      // Add error message to chat
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: error instanceof Error 
+          ? `Error: ${error.message}` 
+          : "An error occurred. Please try again or check your API key.",
+        sender: "assistant",
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, errorMessage]);
+      
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to get response from Agnes",
+        variant: "destructive",
+      });
     } finally {
       setIsTyping(false);
     }
@@ -369,6 +400,15 @@ const AgentChatInterface = () => {
 
   const saveApiKey = () => {
     if (apiKey.trim()) {
+      if (!apiKey.startsWith("sk-")) {
+        toast({
+          title: "Invalid API Key Format",
+          description: "Your OpenAI API key should start with 'sk-'. Please check your key.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       localStorage.setItem("openai_api_key", apiKey);
       setIsApiKeyDialogOpen(false);
       toast({
@@ -411,6 +451,10 @@ const AgentChatInterface = () => {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>OpenAI API Key</DialogTitle>
+                <DialogDescription>
+                  Enter your OpenAI API key to enable chat functionality.
+                  Keys should start with "sk-".
+                </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-2">
                 <div className="space-y-2">
