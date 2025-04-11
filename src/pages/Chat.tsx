@@ -9,7 +9,7 @@ const Chat = () => {
         Ask Agnes
       </h1>
       <p className="text-agrifirm-grey mb-6">
-        Powered by AI, Agnes can help answer your farming questions using your farm's data.
+        Powered by AI, Agnes can help answer your farming questions using your farm's data and analyze crop images.
       </p>
       <AgentChatInterface />
     </div>
