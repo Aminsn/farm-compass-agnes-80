@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Calendar as ReactCalendar } from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
@@ -25,12 +24,17 @@ const PlanningCalendar: React.FC<CalendarProps> = ({ events = [] }) => {
   const [isFilterActive, setIsFilterActive] = useState(false);
   const { updateEvent } = useEvents();
   
-  // Date range filter inputs
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
+  
+  const isAdvisorView = window.location.pathname.includes("/advisor");
+  
+  const viewSpecificEvents = events.filter(event => 
+    event.viewType === (isAdvisorView ? "advisor" : "farmer")
+  );
 
   useEffect(() => {
-    const groupedEvents: { [key: string]: Event[] } = events.reduce((acc: { [key: string]: Event[] }, event) => {
+    const groupedEvents: { [key: string]: Event[] } = viewSpecificEvents.reduce((acc: { [key: string]: Event[] }, event) => {
       const eventDate = format(new Date(event.date), 'yyyy-MM-dd');
       if (!acc[eventDate]) {
         acc[eventDate] = [];
@@ -39,13 +43,12 @@ const PlanningCalendar: React.FC<CalendarProps> = ({ events = [] }) => {
       return acc;
     }, {});
     setEventsByDate(groupedEvents);
-    filterEventsByDateRangeAndCriteria(events);
-  }, [events, dateRange, selectedEventType]);
+    filterEventsByDateRangeAndCriteria(viewSpecificEvents);
+  }, [viewSpecificEvents, dateRange, selectedEventType]);
 
   const filterEventsByDateRangeAndCriteria = (eventsToFilter: Event[]) => {
     let filtered = [...eventsToFilter];
     
-    // Filter by date range if both dates are selected from calendar
     if (dateRange[0] && dateRange[1]) {
       filtered = filtered.filter(event => {
         const eventDate = new Date(event.date);
@@ -55,12 +58,10 @@ const PlanningCalendar: React.FC<CalendarProps> = ({ events = [] }) => {
         });
       });
     } else if (dateRange[0] && !dateRange[1]) {
-      // If only first date is selected, show events for that specific day
       const dateString = format(dateRange[0], 'yyyy-MM-dd');
       filtered = eventsByDate[dateString] || [];
     }
     
-    // Apply type filter
     if (selectedEventType) {
       filtered = filtered.filter(event => event.type === selectedEventType);
     }
@@ -100,24 +101,21 @@ const PlanningCalendar: React.FC<CalendarProps> = ({ events = [] }) => {
     setDateRange([new Date(), null]);
     setSelectedEventType(null);
     setIsFilterActive(false);
-    setFilteredEvents(events);
+    setFilteredEvents(viewSpecificEvents);
     setStartDate("");
     setEndDate("");
   };
 
-  // New function to handle date range filter submission
   const handleDateRangeFilter = () => {
     if (startDate && endDate) {
       const start = new Date(startDate);
       const end = new Date(endDate);
       
-      // Set end time to end of day for inclusive filtering
       end.setHours(23, 59, 59, 999);
       
       setDateRange([start, end]);
       
-      // Filter events based on the date range
-      const filtered = events.filter(event => {
+      const filtered = viewSpecificEvents.filter(event => {
         const eventDate = new Date(event.date);
         return isWithinInterval(eventDate, { start, end });
       });
@@ -127,7 +125,6 @@ const PlanningCalendar: React.FC<CalendarProps> = ({ events = [] }) => {
     }
   };
 
-  // Helper function to get appropriate badge color based on event type
   const getEventTypeColor = (type: string) => {
     switch (type.toLowerCase()) {
       case 'visit':
@@ -144,14 +141,57 @@ const PlanningCalendar: React.FC<CalendarProps> = ({ events = [] }) => {
         return 'bg-indigo-100 text-indigo-800';
       case 'reporting':
         return 'bg-red-100 text-red-800';
+      case 'planting':
+        return 'bg-green-100 text-green-800';
+      case 'maintenance':
+        return 'bg-blue-100 text-blue-800';
+      case 'delivery':
+        return 'bg-purple-100 text-purple-800';
+      case 'market':
+        return 'bg-orange-100 text-orange-800';
+      case 'spraying':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'livestock':
+        return 'bg-indigo-100 text-indigo-800';
+      case 'inventory':
+        return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-200 text-gray-800';
     }
   };
 
+  const getEventTypeOptions = () => {
+    if (isAdvisorView) {
+      return (
+        <>
+          <SelectItem value="all">All Types</SelectItem>
+          <SelectItem value="visit">Farm Visit</SelectItem>
+          <SelectItem value="meeting">Meeting</SelectItem>
+          <SelectItem value="conference">Conference</SelectItem>
+          <SelectItem value="review">Client Review</SelectItem>
+          <SelectItem value="training">Training</SelectItem>
+          <SelectItem value="demonstration">Demonstration</SelectItem>
+          <SelectItem value="reporting">Reporting</SelectItem>
+        </>
+      );
+    } else {
+      return (
+        <>
+          <SelectItem value="all">All Types</SelectItem>
+          <SelectItem value="planting">Planting</SelectItem>
+          <SelectItem value="maintenance">Maintenance</SelectItem>
+          <SelectItem value="delivery">Delivery</SelectItem>
+          <SelectItem value="market">Market</SelectItem>
+          <SelectItem value="spraying">Spraying</SelectItem>
+          <SelectItem value="livestock">Livestock</SelectItem>
+          <SelectItem value="inventory">Inventory</SelectItem>
+        </>
+      );
+    }
+  };
+
   return (
     <div className="space-y-4">
-      {/* Filters above calendar */}
       <div className="bg-white rounded-lg shadow-sm border border-agrifirm-light-green/20 p-4 mb-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
           <div className="space-y-2 w-full">
@@ -161,19 +201,11 @@ const PlanningCalendar: React.FC<CalendarProps> = ({ events = [] }) => {
                 <SelectValue placeholder="Select Event Type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="visit">Farm Visit</SelectItem>
-                <SelectItem value="meeting">Meeting</SelectItem>
-                <SelectItem value="conference">Conference</SelectItem>
-                <SelectItem value="review">Client Review</SelectItem>
-                <SelectItem value="training">Training</SelectItem>
-                <SelectItem value="demonstration">Demonstration</SelectItem>
-                <SelectItem value="reporting">Reporting</SelectItem>
+                {getEventTypeOptions()}
               </SelectContent>
             </Select>
           </div>
           
-          {/* Date Range Filter */}
           <div className="space-y-2 w-full md:col-span-2">
             <Label className="text-sm font-medium text-gray-700 block">Date Range</Label>
             <div className="flex flex-wrap gap-2 items-end">
@@ -213,15 +245,13 @@ const PlanningCalendar: React.FC<CalendarProps> = ({ events = [] }) => {
         </div>
       </div>
       
-      {/* Changed grid layout to give more space to the events sidebar */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Calendar - narrower (2 cols instead of 3) */}
         <div className="md:col-span-2 space-y-4">
           <div className="bg-white rounded-lg shadow-sm border border-agrifirm-light-green/20 overflow-hidden">
             <div className="bg-agrifirm-light-yellow-2/30 px-4 py-3 border-b border-agrifirm-light-green/10">
               <h3 className="font-medium flex items-center text-agrifirm-black">
                 <Calendar className="h-4 w-4 mr-2 text-agrifirm-green" />
-                Calendar {dateRange[0] && dateRange[1] && `(${format(dateRange[0], 'MMM dd')} - ${format(dateRange[1], 'MMM dd')})`}
+                {isAdvisorView ? "Advisory Calendar" : "Farm Calendar"} {dateRange[0] && dateRange[1] && `(${format(dateRange[0], 'MMM dd')} - ${format(dateRange[1], 'MMM dd')})`}
               </h3>
             </div>
             <div className="p-4 flex justify-center">
@@ -236,7 +266,6 @@ const PlanningCalendar: React.FC<CalendarProps> = ({ events = [] }) => {
           </div>
         </div>
         
-        {/* Events list - wider (1 col instead of being squeezed) */}
         <div className="md:col-span-1">
           <div className="bg-white rounded-lg shadow-sm border border-agrifirm-light-green/20 overflow-hidden h-full">
             <div className="bg-agrifirm-light-yellow-2/30 px-4 py-3 border-b border-agrifirm-light-green/10">
@@ -245,7 +274,7 @@ const PlanningCalendar: React.FC<CalendarProps> = ({ events = [] }) => {
                   ? 'Filtered Events'
                   : dateRange[0] && !dateRange[1]
                     ? `Events for ${format(dateRange[0], 'MMM d, yyyy')}`
-                    : 'All Events'}
+                    : isAdvisorView ? 'All Advisory Events' : 'All Farm Events'}
               </h2>
             </div>
             

@@ -10,49 +10,103 @@ type Task = {
   description: string;
   status: "pending" | "completed" | "urgent";
   date: string;
+  viewType?: "farmer" | "advisor";
 };
 
-// Sample tasks data - Farmer-specific tasks
-const sampleTasks: Task[] = [
+// Sample tasks data for farmers
+const farmerTasks: Task[] = [
   {
     id: "1",
     title: "Apply Fertilizer",
     description: "Apply nitrogen fertilizer to the corn field in the north section",
     status: "urgent",
-    date: "2025-04-10"
+    date: "2025-04-10",
+    viewType: "farmer"
   },
   {
     id: "2",
     title: "Check Irrigation System",
     description: "Inspect and clean irrigation nozzles in the soybean field",
     status: "pending",
-    date: "2025-04-10"
+    date: "2025-04-10",
+    viewType: "farmer"
   },
   {
     id: "3",
     title: "Harvest Winter Wheat",
     description: "Begin harvesting winter wheat in the east field",
     status: "completed",
-    date: "2025-04-09"
+    date: "2025-04-09",
+    viewType: "farmer"
   },
   {
     id: "4",
     title: "Repair Barn Door",
     description: "Fix the loose hinge on the north barn door",
     status: "pending",
-    date: "2025-04-11"
+    date: "2025-04-11",
+    viewType: "farmer"
   },
   {
     id: "5",
     title: "Seed Planting",
     description: "Prepare seed drill for spring planting of barley",
     status: "pending",
-    date: "2025-04-10"
+    date: "2025-04-10",
+    viewType: "farmer"
+  }
+];
+
+// Sample tasks data for advisors
+const advisorTasks: Task[] = [
+  {
+    id: "a1",
+    title: "Review Farm Reports",
+    description: "Review monthly performance reports for your assigned farms",
+    status: "urgent",
+    date: "2025-04-10",
+    viewType: "advisor"
+  },
+  {
+    id: "a2",
+    title: "Prepare Client Presentations",
+    description: "Finalize slides for the quarterly client review meetings",
+    status: "pending",
+    date: "2025-04-10",
+    viewType: "advisor"
+  },
+  {
+    id: "a3",
+    title: "Schedule Farm Visits",
+    description: "Coordinate visits to Green Valley and Blue Ridge farms",
+    status: "completed",
+    date: "2025-04-09",
+    viewType: "advisor"
+  },
+  {
+    id: "a4",
+    title: "Equipment Training",
+    description: "Complete online training for new soil testing equipment",
+    status: "pending",
+    date: "2025-04-11",
+    viewType: "advisor"
+  },
+  {
+    id: "a5",
+    title: "Update Client Database",
+    description: "Add the new crop rotation information to client profiles",
+    status: "pending",
+    date: "2025-04-10",
+    viewType: "advisor"
   }
 ];
 
 const TaskList = () => {
-  const [tasks, setTasks] = React.useState<Task[]>(sampleTasks);
+  // Determine if we're in the advisor view
+  const isAdvisorView = window.location.pathname.includes("/advisor");
+  const initialTasks = isAdvisorView ? advisorTasks : farmerTasks;
+  
+  const [tasks, setTasks] = React.useState<Task[]>(initialTasks);
 
   const toggleTaskStatus = (id: string) => {
     setTasks(prevTasks => 
@@ -86,7 +140,9 @@ const TaskList = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-agrifirm-black mb-4">Today's Farm Tasks</h2>
+        <h2 className="text-xl font-semibold text-agrifirm-black mb-4">
+          {isAdvisorView ? "Today's Advisory Tasks" : "Today's Farm Tasks"}
+        </h2>
         {todayTasks.length > 0 ? (
           <div className="space-y-3">
             {todayTasks.map(task => (
@@ -121,14 +177,20 @@ const TaskList = () => {
           </div>
         ) : (
           <div className="farm-card bg-agrifirm-light-yellow-2/50 text-center">
-            <p>No farm tasks scheduled for today</p>
+            <p>
+              {isAdvisorView 
+                ? "No advisory tasks scheduled for today" 
+                : "No farm tasks scheduled for today"}
+            </p>
           </div>
         )}
       </div>
 
       {upcomingTasks.length > 0 && (
         <div>
-          <h2 className="text-xl font-semibold text-agrifirm-black mb-4">Upcoming Field Work</h2>
+          <h2 className="text-xl font-semibold text-agrifirm-black mb-4">
+            {isAdvisorView ? "Upcoming Advisory Work" : "Upcoming Field Work"}
+          </h2>
           <div className="space-y-3">
             {upcomingTasks.map(task => (
               <div key={task.id} className="farm-card">
@@ -152,7 +214,9 @@ const TaskList = () => {
 
       {pastTasks.length > 0 && (
         <div>
-          <h2 className="text-xl font-semibold text-red-500 mb-4">Overdue Farm Tasks</h2>
+          <h2 className="text-xl font-semibold text-red-500 mb-4">
+            {isAdvisorView ? "Overdue Advisory Tasks" : "Overdue Farm Tasks"}
+          </h2>
           <div className="space-y-3">
             {pastTasks.map(task => (
               <div key={task.id} className="farm-card bg-red-50 border-red-100">

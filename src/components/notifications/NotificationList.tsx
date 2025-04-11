@@ -10,8 +10,16 @@ const NotificationList = () => {
   const { notifications } = useNotifications();
   const [searchTerm, setSearchTerm] = useState("");
   const [filter, setFilter] = useState<string | null>(null);
+  
+  // Filter notifications based on current view (farmer or advisor)
+  const isAdvisorView = window.location.pathname.includes("/advisor");
+  const viewTypeFilter = isAdvisorView ? "advisor" : "farmer";
+  
+  const viewSpecificNotifications = notifications.filter(
+    notification => notification.viewType === viewTypeFilter
+  );
 
-  const filteredNotifications = notifications
+  const filteredNotifications = viewSpecificNotifications
     .filter((notification) => {
       // Filter by type if filter is active
       if (filter && notification.type !== filter) return false;
@@ -26,25 +34,37 @@ const NotificationList = () => {
     })
     .sort((a, b) => b.date.getTime() - a.date.getTime());
 
-  const filterButtons = [
-    { label: "Weather", value: "weather" },
-    { label: "Crop", value: "crop" },
-    { label: "Equipment", value: "equipment" },
-  ];
+  const getFilterButtons = () => {
+    if (isAdvisorView) {
+      return [
+        { label: "Advisory", value: "advisor" },
+      ];
+    } else {
+      return [
+        { label: "Weather", value: "weather" },
+        { label: "Crop", value: "crop" },
+        { label: "Equipment", value: "equipment" },
+      ];
+    }
+  };
+
+  const filterButtons = getFilterButtons();
 
   const clearFilters = () => {
     setFilter(null);
     setSearchTerm("");
   };
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = viewSpecificNotifications.filter(n => !n.read).length;
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Bell className="h-5 w-5 text-agrifirm-green" />
-          <h2 className="text-xl font-semibold">Farm Alerts</h2>
+          <h2 className="text-xl font-semibold">
+            {isAdvisorView ? "Advisory Alerts" : "Farm Alerts"}
+          </h2>
           {unreadCount > 0 && (
             <span className="ml-2 rounded-full bg-agrifirm-green text-white px-2 py-0.5 text-xs font-medium">
               {unreadCount} unread
@@ -56,7 +76,7 @@ const NotificationList = () => {
       <div className="relative mb-4">
         <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
         <Input
-          placeholder="Search farm alerts..."
+          placeholder={isAdvisorView ? "Search advisory alerts..." : "Search farm alerts..."}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="pl-8"
@@ -93,11 +113,15 @@ const NotificationList = () => {
       ) : (
         <div className="text-center py-10 text-gray-500">
           <Bell className="mx-auto h-10 w-10 text-gray-400 mb-3" />
-          <h3 className="text-lg font-medium mb-1">No farm alerts found</h3>
+          <h3 className="text-lg font-medium mb-1">
+            {isAdvisorView ? "No advisory alerts found" : "No farm alerts found"}
+          </h3>
           <p className="text-sm">
             {filter || searchTerm
               ? "Try changing your filters or search term"
-              : "Your fields are looking good! No alerts at this time."}
+              : isAdvisorView 
+                ? "No pending alerts or requests at this time."
+                : "Your fields are looking good! No alerts at this time."}
           </p>
         </div>
       )}

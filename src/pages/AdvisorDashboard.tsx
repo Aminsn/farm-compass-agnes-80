@@ -94,7 +94,7 @@ const AdvisorDashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
   
   const selectedFarmer = farmers.find(farmer => farmer.id === selectedFarmerId) || farmers[0];
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = notifications.filter(n => !n.read && n.viewType === "advisor").length;
   
   const filteredFarmers = farmers.filter(farmer => 
     farmer.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -102,7 +102,7 @@ const AdvisorDashboard = () => {
   );
 
   const advisorNotifications = notifications.filter(n => 
-    n.type === "advisor"
+    n.viewType === "advisor"
   );
   
   return (
