@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from "react";
-import { Send, User, Bot, HelpCircle, X, Settings } from "lucide-react";
+import { Send, User, Bot, HelpCircle, X, Settings, Image as ImageIcon, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -21,6 +21,7 @@ type Message = {
   content: string;
   sender: "user" | "assistant";
   timestamp: Date;
+  image?: string; // Base64 string for uploaded images
 };
 
 // Sample initial messages
@@ -53,6 +54,9 @@ const SYSTEM_MESSAGE = {
   You have access to specific information about the farmer's farm through their farm knowledge base and documents.
   Reference this information when answering questions about their specific farm conditions, crops, practices, etc.
   
+  You can now also analyze images. When a user uploads an image of their farm, crops, or any farming-related item,
+  analyze it and provide insights, identify issues, or make recommendations based on what you see.
+  
   Provide clear, practical advice based on farming best practices.
   When you don't have specific information about a user's local conditions, acknowledge this
   and give general guidance while suggesting they consult local agricultural experts.
@@ -78,6 +82,11 @@ const AgentChatInterface = () => {
   const [externalKnowledgeBase, setExternalKnowledgeBase] = useState<string>("");
   const [isDocLoading, setIsDocLoading] = useState(false);
   const [docError, setDocError] = useState<string | null>(null);
+  
+  // New state for image handling
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [isImageUploading, setIsImageUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Fetch farm document and external knowledge base on first load
   useEffect(() => {
@@ -117,6 +126,64 @@ const AgentChatInterface = () => {
     
     fetchFarmInformation();
   }, []);
+  
+  // Image upload handler
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setIsImageUploading(true);
+    const file = e.target.files?.[0];
+    
+    if (!file) {
+      setIsImageUploading(false);
+      return;
+    }
+    
+    // Check file type and size
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid file type",
+        description: "Please upload an image file (JPEG, PNG, etc.)",
+        variant: "destructive",
+      });
+      setIsImageUploading(false);
+      return;
+    }
+    
+    // Limit file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Image size should be less than 5MB",
+        variant: "destructive",
+      });
+      setIsImageUploading(false);
+      return;
+    }
+    
+    // Convert image to base64
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64String = reader.result as string;
+      setSelectedImage(base64String);
+      setIsImageUploading(false);
+    };
+    reader.onerror = () => {
+      toast({
+        title: "Error",
+        description: "Failed to read the image file",
+        variant: "destructive",
+      });
+      setIsImageUploading(false);
+    };
+    reader.readAsDataURL(file);
+  };
+  
+  // Remove selected image
+  const removeSelectedImage = () => {
+    setSelectedImage(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
   
   // Save API key to localStorage whenever it changes
   useEffect(() => {
@@ -165,17 +232,39 @@ const AgentChatInterface = () => {
     const recentMessages = messages.slice(-10);
     
     recentMessages.forEach(msg => {
-      historyMessages.push({
-        role: msg.sender === "user" ? "user" : "assistant",
-        content: msg.content
-      });
+      if (msg.image) {
+        // If the message has an image, create content with both text and image
+        historyMessages.push({
+          role: msg.sender === "user" ? "user" : "assistant",
+          content: [
+            { type: "text", text: msg.content },
+            { type: "image_url", image_url: { url: msg.image } }
+          ]
+        });
+      } else {
+        // Regular text message
+        historyMessages.push({
+          role: msg.sender === "user" ? "user" : "assistant",
+          content: msg.content
+        });
+      }
     });
     
-    // Add the new user message
-    historyMessages.push({
-      role: "user",
-      content: userMessage
-    });
+    // Add the new user message, with image if available
+    if (selectedImage) {
+      historyMessages.push({
+        role: "user",
+        content: [
+          { type: "text", text: userMessage },
+          { type: "image_url", image_url: { url: selectedImage } }
+        ]
+      });
+    } else {
+      historyMessages.push({
+        role: "user",
+        content: userMessage
+      });
+    }
     
     return historyMessages;
   };
@@ -216,7 +305,8 @@ const AgentChatInterface = () => {
       id: Date.now().toString(),
       content: question,
       sender: "user",
-      timestamp: new Date()
+      timestamp: new Date(),
+      image: selectedImage || undefined
     };
     
     setMessages(prev => [...prev, userMessage]);
@@ -261,6 +351,12 @@ const AgentChatInterface = () => {
       };
       
       setMessages(prev => [...prev, assistantMessage]);
+      
+      // Clear the selected image after the request is complete
+      setSelectedImage(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     } catch (error) {
       // Error is already handled in sendChatRequest
       console.error("Failed to get response:", error);
@@ -270,7 +366,7 @@ const AgentChatInterface = () => {
   };
 
   const handleSendMessage = () => {
-    if (input.trim()) {
+    if (input.trim() || selectedImage) {
       // Use OpenAI if API key is available, otherwise show dialog
       if (apiKey) {
         getOpenAIResponse(input.trim());
@@ -278,6 +374,12 @@ const AgentChatInterface = () => {
         // Show dialog to enter API key
         setIsApiKeyDialogOpen(true);
       }
+    } else {
+      toast({
+        title: "Empty message",
+        description: "Please enter a message or upload an image",
+        variant: "destructive",
+      });
     }
   };
 
@@ -316,7 +418,7 @@ const AgentChatInterface = () => {
       });
       
       // If there was a pending message, send it now
-      if (input.trim()) {
+      if (input.trim() || selectedImage) {
         getOpenAIResponse(input.trim());
       }
     } else {
@@ -393,6 +495,9 @@ const AgentChatInterface = () => {
                   <li>Harvest timing</li>
                 </ul>
                 <p className="text-sm text-agrifirm-grey mt-2">
+                  <strong>Image Analysis:</strong> Upload images of your crops, soil, or farm issues for AI analysis.
+                </p>
+                <p className="text-sm text-agrifirm-grey mt-2">
                   <strong>Task & Calendar Management:</strong> Agnes can help you manage tasks and events.
                   Try asking things like:
                 </p>
@@ -440,6 +545,15 @@ const AgentChatInterface = () => {
                     {message.sender === "assistant" ? "Agnes" : "You"} • {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
+                {message.image && (
+                  <div className="mb-2 rounded overflow-hidden max-w-xs">
+                    <img 
+                      src={message.image} 
+                      alt="User uploaded" 
+                      className="max-w-full h-auto"
+                    />
+                  </div>
+                )}
                 <p className="whitespace-pre-wrap">{message.content}</p>
               </div>
             </div>
@@ -482,18 +596,55 @@ const AgentChatInterface = () => {
       )}
       
       <div className="border-t p-3 bg-white">
+        {selectedImage && (
+          <div className="mb-2 relative rounded border border-agrifirm-light-green/30 p-1 inline-block">
+            <img 
+              src={selectedImage} 
+              alt="Upload preview" 
+              className="h-16 rounded"
+            />
+            <Button
+              variant="destructive"
+              size="icon"
+              className="absolute -top-2 -right-2 h-5 w-5 rounded-full"
+              onClick={removeSelectedImage}
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
+        )}
         <div className="flex gap-2">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask Agnes about your farm or manage tasks and events..."
+            placeholder="Ask Agnes about your farm or upload an image for analysis..."
             className="flex-1 resize-none border rounded-md p-2 h-12 farm-input"
             rows={1}
           />
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            ref={fileInputRef}
+            onChange={handleImageUpload}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isImageUploading}
+            className="border-agrifirm-light-green/30"
+          >
+            {isImageUploading ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <ImageIcon className="h-5 w-5" />
+            )}
+          </Button>
           <Button
             onClick={handleSendMessage}
-            disabled={!input.trim() || isTyping}
+            disabled={(!input.trim() && !selectedImage) || isTyping}
             className="farm-button"
           >
             <Send className="h-5 w-5" />
