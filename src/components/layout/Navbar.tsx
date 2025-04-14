@@ -20,7 +20,7 @@ const Navbar = () => {
           <div className="flex items-center">
             <Link to="/" className="flex items-center gap-2">
               <Tractor className="h-8 w-8 text-agrifirm-green" />
-              <span className="text-xl font-bold text-agrifirm-black">Crop Compass</span>
+              <span className="text-xl font-bold text-agrifirm-black">AGNES</span>
             </Link>
           </div>
 
