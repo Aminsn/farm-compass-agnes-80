@@ -23,6 +23,7 @@ const Navbar = () => {
               <div className="flex flex-col">
                 <span className="text-xl font-bold text-agrifirm-black">AGNES</span>
                 <span className="text-xs text-agrifirm-green -mt-1">Farmer Portal</span>
+              </div>
             </Link>
           </div>
 
