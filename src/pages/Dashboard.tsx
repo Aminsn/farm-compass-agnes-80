@@ -30,7 +30,7 @@ const Dashboard = () => {
         <div className="lg:col-span-2 space-y-6">
           <Tabs defaultValue="tasks" className="w-full">
             <TabsList className="mb-4 bg-agrifirm-light-yellow-2/50">
-              <TabsTrigger value="tasks">My Tasksssss</TabsTrigger>
+              <TabsTrigger value="tasks">My Tasks</TabsTrigger>
               <TabsTrigger value="planning">My Schedule</TabsTrigger>
               <TabsTrigger value="advisor">
                 <UserRound className="h-4 w-4 mr-2" />
