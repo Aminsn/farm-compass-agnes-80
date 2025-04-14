@@ -8,7 +8,7 @@ const Index = () => {
   return (
     <>
       <Helmet>
-        <title>Crop Compass - Your Farming Assistant</title>
+        <title>AGNES - Your Farming Assistant</title>
         <meta name="description" content="A digital assistant to help farmers achieve their best yield" />
       </Helmet>
       <div className="min-h-screen bg-gradient-to-b from-white to-agrifirm-light-yellow-2/30">
