@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Helmet } from "react-helmet";
 import Navbar from "@/components/layout/AdvisorNavbar";
@@ -162,7 +161,7 @@ const AdvisorDashboard = () => {
                     </TabsTrigger>
                   </TabsList>
                   <TabsContent value="tasks" className="mt-0">
-                    <EditableTaskList />
+                    <TaskList />
                   </TabsContent>
                   <TabsContent value="planning" className="mt-0">
                     <PlanningCalendar events={events} />
