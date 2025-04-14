@@ -162,7 +162,7 @@ const AdvisorDashboard = () => {
                     </TabsTrigger>
                   </TabsList>
                   <TabsContent value="tasks" className="mt-0">
-                    <EditableTaskList />
+                    <EditableTaskList viewType="advisor" />
                   </TabsContent>
                   <TabsContent value="planning" className="mt-0">
                     <PlanningCalendar events={events} />

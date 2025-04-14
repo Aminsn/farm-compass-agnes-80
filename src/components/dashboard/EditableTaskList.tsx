@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Check, Clock, AlertTriangle, Plus, Trash2, Pencil, X, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,18 +9,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useTaskContext, Task } from "@/context/TaskContext";
 import { format } from "date-fns";
 
-const EditableTaskList = () => {
+interface EditableTaskListProps {
+  viewType?: "farmer" | "advisor";
+}
+
+const EditableTaskList = ({ viewType = "farmer" }: EditableTaskListProps) => {
   const { tasks, addTask, deleteTask, updateTask, completeTask } = useTaskContext();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   
-  // New task form state
+  const filteredTasks = tasks.filter(task => 
+    !task.viewType || task.viewType === viewType
+  );
+  
   const [newTask, setNewTask] = useState({
     title: "",
     description: "",
     status: "pending" as Task["status"],
-    date: new Date().toISOString().split('T')[0]
+    date: new Date().toISOString().split('T')[0],
+    viewType: viewType
   });
 
   const handleAddTask = () => {
@@ -30,15 +37,16 @@ const EditableTaskList = () => {
         title: newTask.title,
         description: newTask.description,
         status: newTask.status,
-        date: newTask.date
+        date: newTask.date,
+        viewType: viewType
       });
       
-      // Reset form and close dialog
       setNewTask({
         title: "",
         description: "",
         status: "pending",
-        date: new Date().toISOString().split('T')[0]
+        date: new Date().toISOString().split('T')[0],
+        viewType: viewType
       });
       setIsAddDialogOpen(false);
     }
@@ -73,9 +81,9 @@ const EditableTaskList = () => {
   };
 
   const today = new Date().toISOString().split('T')[0];
-  const todayTasks = tasks.filter(task => task.date === today);
-  const upcomingTasks = tasks.filter(task => task.date > today);
-  const pastTasks = tasks.filter(task => task.date < today && task.status !== "completed");
+  const todayTasks = filteredTasks.filter(task => task.date === today);
+  const upcomingTasks = filteredTasks.filter(task => task.date > today);
+  const pastTasks = filteredTasks.filter(task => task.date < today && task.status !== "completed");
 
   return (
     <div className="space-y-6">
@@ -238,7 +246,6 @@ const EditableTaskList = () => {
         </div>
       )}
       
-      {/* Add Task Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -303,7 +310,6 @@ const EditableTaskList = () => {
         </DialogContent>
       </Dialog>
       
-      {/* Edit Task Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
           <DialogHeader>

@@ -6,4 +6,5 @@ export interface Event {
   description?: string;
   type: string;
   status?: string;
+  viewType?: "farmer" | "advisor";
 }
