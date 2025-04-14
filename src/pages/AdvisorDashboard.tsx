@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
 import Navbar from "@/components/layout/AdvisorNavbar";
 import { useEvents } from "@/context/EventContext";
@@ -105,6 +105,11 @@ const AdvisorDashboard = () => {
   const advisorNotifications = notifications.filter(n => 
     n.viewType === "advisor"
   );
+  
+  // Scroll to top when tabs change
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [advisorView, personalTab, customerTab]);
   
   return (
     <>
