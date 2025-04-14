@@ -21,7 +21,7 @@ const AdvisorNavbar = () => {
             <Link to="/advisor" className="flex items-center gap-2">
               <Tractor className="h-8 w-8 text-agrifirm-green" />
               <div className="flex flex-col">
-                <span className="text-xl font-bold text-agrifirm-black">Crop Compass</span>
+                <span className="text-xl font-bold text-agrifirm-black">AGNES</span>
                 <span className="text-xs text-agrifirm-green -mt-1">Advisor Portal</span>
               </div>
             </Link>
